@@ -61,7 +61,6 @@ public class MemoryServer extends HttpServlet {
         clearLatestResultFlag();
         statement = connection.createStatement();
         String sql = String.format("INSERT INTO results (time, date, name, latest) VALUES ('%s', '%s', '%s', '*')", time, date, name); 
-        System.out.println(sql);
         statement.executeUpdate(sql);
         statement.close();
     }
@@ -69,7 +68,6 @@ public class MemoryServer extends HttpServlet {
     private void clearLatestResultFlag() throws SQLException {
         statement = connection.createStatement();
         String sql = String.format("UPDATE results SET latest = ' ' WHERE name = '%s'", name); 
-        System.out.println(sql);
         statement.executeUpdate(sql);
         statement.close();
     }
@@ -105,7 +103,6 @@ public class MemoryServer extends HttpServlet {
             
             String latest = resultSet.getString("latest");
             if(latest.equals("*")) date = date + "*" ;
-            System.out.println(String.format("%s %s", time, date));
             topFive.add(String.format("%s %s", time, date));            
         }
         statement.close();

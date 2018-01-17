@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- © Chris Seddon, 17 January 2018 -->
 <html>
 <head>
   <meta charset="utf-8">
@@ -8,17 +9,18 @@
 <script src="jquery_cookie.js"></script>
 <script src="jquery.mobile.custom.js"></script>
 <script>
-var debug = true;
+var debug = false;
 </script>
 <style type="text/css">
 body {
-    margin: 1%;
+    margin: 2%;
 }
 div {
     width: 7.5%;
     float: left;
     clear: none;
 }
+
 h1 {
     position:relative;
     z-index:0;
@@ -40,6 +42,7 @@ h1 {
 }
 #name {
     font-size: 16pt;
+    z-index: 0;
 }
 
 button {
@@ -182,7 +185,6 @@ var cards = [
 
     function clearResults() {
         $("#results").css("visibility", "hidden");  
-        $("#clock").text("0:00");
     }
     
     function showResults() {
@@ -387,7 +389,14 @@ var cards = [
 	    $("#name").val(cookieValue);	    
 	}
 
-//$(window).on("load", function() {
+function addCopyright() {
+    var html = "<div id=copyright>© Chris Seddon, 17 January 2018</div>";
+    $("#dummy").append($(html).clone()).css("float", "none");
+    $("#copyright").css("color", "black")
+                   .css("clear", "both")
+                   .css("width", "50vw");
+}
+
 $(document).ready(function() {
     useCookiesToSetNameField();
     $("body").css( 'cursor', 'pointer' );        
@@ -399,13 +408,12 @@ $(document).ready(function() {
     else
         addClickHandlers();
     loadCardImages();
+    addCopyright();
 });
-
 </script>
 </head>
 <body>
     <h1>MEMORY
-    <!--  <input data-role="none" id="name" type="text" name="name" value="name...">  -->
     </h1>
     <div id='main'>
     <div class='layer-0'></div>
@@ -416,6 +424,7 @@ $(document).ready(function() {
     <div id='clock'></div>
     <div id='hide'></div>    
     <input id="name" type="text" name="name" value="">
+    <div id="dummy"></div>
 </body>
 </html>
 
