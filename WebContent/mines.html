@@ -86,11 +86,57 @@
         "rgb(255,   0,   0)",
             ];
     
+    function setupHoverHandlers() {   
+        // set up "hover" handlers for each cell
+        $(".internal").hover(hovering, function(){});   
+    }
+
+    function toggleHovering() {
+        if (mode % 2 === 0) {
+            $(".internal").unbind("mouseenter mouseleave");       
+            $("#mode").html("MOVE mode").css("color", "red");
+            $("#box").css('cursor', 'cell');
+        } else {
+            $(".internal").hover(hovering, function(){});   
+            $("#mode").html("HOVER mode").css("color", "red");
+            $("#box").css('cursor', 'pointer');
+        }
+        mode += 1;
+    }
+
+    function hovering() {
+        $("#help").html("");
+            // ignore this cell if already selected
+        if($(this).data("id").selected === 1) return;
+            
+        // check if we have selected a mine or a safe cell
+        if($(this).data("id").mine === 1) {
+            hitMine(this);
+        } else {
+            // safe cell, work out how many mines are adjacent to this cell and add text and color appropriately
+            var count = howManyMinesNearby(this);
+            $(this).text(count);
+            var color = "rgb(0, 218, " + colors[count] + ")";
+            $(this).css("background-color", color);
+        };
+        // record that this cell (safe or mine) has been selected
+        $(this).data("id").selected = 1;
+        cellsLeft -= 1;
+        
+        // see if any mine surrounded
+        checkMines();
+            
+        // update selected cells and remaining mine counts
+        $("#minesDetected").text("Mines detected: " + minesDetected);
+        $("#remainingMines").text("Mines left: " + minesLeft);
+        $("#cellsSelected").text("Cells remaining: " + cellsLeft);
+    }
+
     function getId(row, col) {
         return row * COLS + col;        
     }
     
-    function addMines(n) {
+    function addMinesToGrid(n) {
         var count = MINES;
             while (count > 0) {
                 var index = Math.floor(Math.random() * ROWS * COLS);
@@ -195,58 +241,12 @@
         return count;
     }
     
-    function hovering() {
-        $("#help").html("");
-    	    // ignore this cell if already selected
-        if($(this).data("id").selected === 1) return;
-            
-        // check if we have selected a mine or a safe cell
-        if($(this).data("id").mine === 1) {
-            hitMine(this);
-        } else {
-            // safe cell, work out how many mines are adjacent to this cell and add text and color appropriately
-            var count = howManyMinesNearby(this);
-            $(this).text(count);
-            var color = "rgb(0, 218, " + colors[count] + ")";
-            $(this).css("background-color", color);
-        };
-        // record that this cell (safe or mine) has been selected
-        $(this).data("id").selected = 1;
-        cellsLeft -= 1;
-        
-        // see if any mine surrounded
-        checkMines();
-            
-        // update selected cells and remaining mine counts
-        $("#minesDetected").text("Mines detected: " + minesDetected);
-        $("#remainingMines").text("Mines left: " + minesLeft);
-        $("#cellsSelected").text("Cells remaining: " + cellsLeft);
-    }
-
     function hitMine(selector) {
         minesHit += 1;
         $("#hits").text("You have hit " + minesHit + " mine(s)!");
         $(selector).data("id").exploded = 1;
         $(selector).css({background:'radial-gradient(circle at center, green 0, red 100%)'});
         minesLeft -= 1;             
-    }
-
-    function setupHoverHandlers() {   
-        // set up "hover" handlers for each cell
-        $(".internal").hover(hovering, function(){});   
-    }
-
-    function toggleHovering() {
-        if (mode % 2 === 0) {
-            $(".internal").unbind("mouseenter mouseleave");       
-            $("#mode").html("MOVE mode").css("color", "red");
-            $("#box").css('cursor', 'cell');
-        } else {
-            $(".internal").hover(hovering, function(){});   
-            $("#mode").html("HOVER mode").css("color", "red");
-            $("#box").css('cursor', 'pointer');
-        }
-        mode += 1;
     }
 
     function revealVerySafeCells() {
@@ -288,11 +288,7 @@
                        .css("width", "50vw");
     }
 
-    $(document).ready(function() {
-        // change mouse pointer to a hand
-        $("#box").css('cursor', 'pointer');
-        
-        // fill out the grid 
+    function fillOutTheGrid() {
         var newLine = "<div class='newLine'></div>";
         for(var row = 0; row < ROWS; row++) {
             for(var col = 0; col < COLS; col++) {
@@ -313,27 +309,34 @@
             $("#box").append($(newLine).clone());
             $("#box").append($(newLine).clone());
         }
-        
-        // give user statistics
+    }
+
+    function addUserStatistics() {    
         $("#box").append("<div id='mode'></div>");
         $("#box").append("<div id='cellsSelected'></div>");
         $("#box").append("<div id='remainingMines'></div>");
         $("#box").append("<div id='minesDetected'></div>");
         $("#box").append("<div id='hits'></div>");
-        
-        // add mines to grid
-        addMines(MINES);
-       
-        // tell the user how to play
-        addHelp();
-        
-        // reveal some safe cells before we start
-        revealVerySafeCells();
+    }
+    
+    function changeMousePointerToAHand() {
+        $("#box").css('cursor', 'pointer');
+    }
 
-        // set up the mode and statistics
+    function setUpTheModeAndStatistics() {
         $("body").keypress(toggleHovering);
         toggleHovering();
-        $("#mode").html("Click on a green cell to start").css("color", "red");
+        $("#mode").html("Click on a green cell to start").css("color", "red");        
+    }
+    
+    $(document).ready(function() {
+        changeMousePointerToAHand();
+	    fillOutTheGrid();
+	    addUserStatistics();
+        addMinesToGrid(MINES);
+        addHelp();
+        revealVerySafeCells();
+        setUpTheModeAndStatistics();
         addCopyright();
     });
 
