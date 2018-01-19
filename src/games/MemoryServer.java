@@ -91,7 +91,7 @@ public class MemoryServer extends HttpServlet {
 
     private ArrayList<String> getTopFiveResultsFromDatabase() throws SQLException {
         Statement statement = connection.createStatement();
-        String sql = String.format("SELECT time, date, latest FROM results WHERE name = '%s' ORDER BY time ASC LIMIT 5", name);
+        String sql = String.format("SELECT time, date, latest FROM results WHERE name = '%s' ORDER BY time ASC LIMIT 10", name);
         ResultSet resultSet = statement.executeQuery(sql);
         ArrayList<String> topFive = new ArrayList<String>();
         
