@@ -120,8 +120,8 @@
 
     function setupTapHandlers() {   
         // set up "hover" handlers for each cell
-        $(".internal").bind("touchstart", function() { touchMoveInProgress = true; console.log(touchMoveInProgress);});   
-        $(".internal").bind("touchend", function() { touchMoveInProgress = false; console.log(touchMoveInProgress);});   
+        $(".internal").bind("touchstart", function() { touchMoveInProgress = true; });   
+        $(".internal").bind("touchend", function() { touchMoveInProgress = false; });   
         $(".internal").bind("touchmove", hovering);
     }
 
