@@ -3,33 +3,27 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<!-- 
 <link rel="stylesheet" href="jquery-ui-1.12.1.css">
 <script type="text/javascript" src="jquery-3.2.1.js"></script>
 <script type="text/javascript" src="jquery-ui-1.12.1.js"></script>
- -->
- 
-<link rel="stylesheet" href="jquery.mobile-1.4.5.css">
-<script type="text/javascript" src="jquery-3.2.1.js"></script>
-<script type="text/javascript" src="jquery-ui-1.12.1.js"></script>
-<script src="jquery_cookie.js"></script>
-<script src="jquery.mobile.custom.js"></script>
-
-
 <style type="text/css">
     body {
-        margin-left: 2vw;
+        margin-left: 6vw;
     }
     h1 {
         font-size: 14pt;
     }
     div#box {
+        height: 40vw;
+        width: 80vw;
         border-width: 10px;
         border-style: groove;
         border-color: grey;
         filter: drop-shadow(1px 1px 5px #808080);    
     }
     .square {
+        height: 2vw;
+        width: 2vw;
         float: left;
         margin: 0;
         padding: 0;
@@ -52,13 +46,6 @@
         font-size: 80%;
         float: left;
     }
-    #help {
-        position: fixed;
-        top: 20%;
-        left: 20%;
-        -webkit-transform: translate(-10%, -10%);
-        transform: translate(-10%, -10%);
-    }
     div.newLine {
         clear: both;    
     }
@@ -71,36 +58,22 @@
 <script>
     function addHelp() {
         $("#box").append("<div id='help'>Start by clicking on of the green cells; these are safe cells. " +
-            "As you move the mouse, cells will be revealed, but try to avoid hitting mines.  " +
-            "The numbers represent the number of mines in adjacent squares.  Hit any key to disable hovering so that you can " +
-            "safely move to another part of the grid.  Hit any key again to re-enable hovering.  If you are using a tablet just tap somewhere else.<br/>  " +
-            "<div style='color:red'>IMPORTANT: </div>" +
+            "Once you leave the cell you will  be in hover mode.  As you move the mouse, cells will be revealed " +
+            "(but don't forget to go back and select the original cell).  The numbers represent the number of mines " + 
+            "in adjacent squares.  Try to avoid hitting mines.  Hit any key to disable hovering so that you can " +
+            "safely move to another part of the grid.  Hit any key again to re-enable hovering.  " +
             "Mines will be detected and go green if all of their adjacent cells are either selected or are mines.  You " +
-            "can use this fact to determine the location of other hidden mines or safe cells." +
-            "<div style='color:red'>click to dismiss this popup</div></div>");
-        $("#help").css("background", "white");
-        $("#help").click(function() {
-            $(this).css("visibility", "hidden");
-        })
+            "can use this fact to determine the location of other hidden mines or safe cells.</div>");
     }
 
-    var android = navigator.appVersion.indexOf("Android") !== -1;
-    if(android) {
-        var ROWS = 10;
-        var COLS = 20;
-        var MINES = 50;
-    } else {
-        var ROWS = 20;
-        var COLS = 40;
-        var MINES = 200;        
-    }
+    var ROWS = 20;
+    var COLS = 40;
+    var MINES = 200;
     var minesHit = 0;
     var minesDetected = 0;
     var minesLeft = MINES;
     var cellsLeft = ROWS * COLS;
     var mode = 0;
-    var PERCENTAGE_SCREEN_USED = 94;
-    var touchMoveInProgress = false;
     var colors = [
         "rgb(255, 240, 240)",
         "rgb(255, 190, 190)",
@@ -118,13 +91,6 @@
         $(".internal").hover(hovering, function(){});   
     }
 
-    function setupTapHandlers() {   
-        // set up "hover" handlers for each cell
-        $(".internal").bind("touchstart", function() { touchMoveInProgress = true; console.log(touchMoveInProgress);});   
-        $(".internal").bind("touchend", function() { touchMoveInProgress = false; console.log(touchMoveInProgress);});   
-        $(".internal").bind("touchmove", hovering);
-    }
-
     function toggleHovering() {
         if (mode % 2 === 0) {
             $(".internal").unbind("mouseenter mouseleave");       
@@ -138,32 +104,25 @@
         mode += 1;
     }
 
-
-    function findCellUnderTapMove(event) {
-        var myLocation = event.originalEvent.changedTouches[0];
-        return document.elementFromPoint(myLocation.clientX, myLocation.clientY);
-    }
-
     function hovering(e) {
-        var _this = this;
-        if(touchMoveInProgress) {
-            _this = findCellUnderTapMove(e);
-        }
-        // ignore this cell if already selected
-        if($(_this).data("id").selected === 1) return;
-        
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        $("#help").html("");
+            // ignore this cell if already selected
+        if($(this).data("id").selected === 1) return;
+            
         // check if we have selected a mine or a safe cell
-        if($(_this).data("id").mine === 1) {
-            hitMine(_this);
+        if($(this).data("id").mine === 1) {
+            hitMine(this);
         } else {
             // safe cell, work out how many mines are adjacent to this cell and add text and color appropriately
-            var count = howManyMinesNearby(_this);
-            $(_this).text(count);
+            var count = howManyMinesNearby(this);
+            $(this).text(count);
             var color = "rgb(0, 218, " + colors[count] + ")";
-            $(_this).css("background-color", color);
+            $(this).css("background-color", color);
         };
         // record that this cell (safe or mine) has been selected
-        $(_this).data("id").selected = 1;
+        $(this).data("id").selected = 1;
         cellsLeft -= 1;
         
         // see if any mine surrounded
@@ -317,7 +276,6 @@
             $(selector).click(function() {
                 $(selector).unbind("click");  // remove click handler after first cell selected
                 setupHoverHandlers();
-                setupTapHandlers();
                 toggleHovering();
                 $("#help").text("");
             });
@@ -333,20 +291,7 @@
                        .css("width", "50vw");
     }
 
-    function setupGrid() {
-        var boxWidth = PERCENTAGE_SCREEN_USED;
-        var boxHeight =  boxWidth / 2;
-        var squareSize = boxWidth / COLS;
- 
-        var divBoxRule = "div#box { height: " + boxHeight + "vw; width: " + boxWidth + "vw; }";
-        var squareRule = ".square { height: " + squareSize + "vw; width: " + squareSize + "vw; } "
-        var sheet = window.document.styleSheets[0];
-        sheet.insertRule(divBoxRule, sheet.cssRules.length);
-        sheet.insertRule(squareRule, sheet.cssRules.length);
-    }
-    
     function fillOutTheGrid() {
-        setupGrid();
         var newLine = "<div class='newLine'></div>";
         for(var row = 0; row < ROWS; row++) {
             for(var col = 0; col < COLS; col++) {
