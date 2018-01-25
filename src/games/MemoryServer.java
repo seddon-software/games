@@ -37,9 +37,7 @@ public class MemoryServer extends HttpServlet {
     private static final String password = "xhlesley1A";
 
     private static Statement statement;
-    private static ResultSet resultSet;
     private static Connection connection;
-
     private String time;
     private String date;
     private String name;

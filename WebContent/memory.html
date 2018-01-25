@@ -2,8 +2,10 @@
 <!-- © Chris Seddon, 17 January 2018 -->
 <html>
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8" />
+  <meta name='viewport' 
+     content='width=device-width, height=device-height, user-scalable=no,
+              initial-scale=1.0, maximum-scale=1.0, user-scalable=0' />
 <link rel="stylesheet" href="jquery.mobile-1.4.5.css">
 <script type="text/javascript" src="jquery-3.2.1.js"></script>
 <script src="jquery_cookie.js"></script>
@@ -12,11 +14,17 @@
 var debug = false;
 </script>
 <style type="text/css">
+
 body {
-    margin: 2%;
+    overflow:hidden;
 }
+
+div.ui-page.ui-page-theme-a.ui-page-active {
+    padding-left: 2vw;
+}
+
 div {
-    width: 7.0%;
+    width: 7.3vw;
     float: left;
     clear: none;
 }
@@ -24,7 +32,7 @@ div {
 h1 {
     position:relative;
     z-index:0;
-    font-size: 16pt;
+    font-size: 32pt;
 }
 
 .layer-0 {
@@ -47,8 +55,8 @@ h1 {
 }
 
 button {
-    width: 10vw;
-    height: 5vw;
+    width: 8vw;
+    height: 3vw;
     float: left;
     filter: drop-shadow(-5px -5px 5px #000);    
 }
@@ -60,8 +68,9 @@ button, #name {
 #clock {
     top: 0vh;
     width: 10vw;
+    right: 10vw;
     position: relative;
-    font-size: 36pt;
+    font-size: 18pt;
     float: right;
 }
 
@@ -264,18 +273,18 @@ var cards = [
                     if($(firstCard).data("id").pip === $(secondCard).data("id").pip) {
                         $(firstCard).data("id").state = "deleted";
                         $(secondCard).data("id").state = "deleted";
-                            pair1 = firstCard;
-                            pair2 = secondCard;
+                        pair1 = firstCard;
+                        pair2 = secondCard;
                         firstCard = undefined;
                         secondCard = undefined;
-                        // found a pair, wait 0.5 seconds and then hide cards
+                        // found a pair, so hide cards
                         setTimeout(function() {                    
                             $(pair1).children().attr("src", "images/cards/blank.svg");             
                             $(pair2).children().attr("src", "images/cards/blank.svg");             
                             matches += 2;
                             if(matches === cards.length) endGame();
                             if(debug) endGame();
-                        }, 250);
+                        }, 1);
                     }
                 } else {
                     // two cards don't match, so hide them both and start again
@@ -311,6 +320,7 @@ var cards = [
         $("#start").on("tap", clearResults);
         
         $("div div div").on("tap", function(e) {
+            console.log($(this).data("id").card);
             process(this);
             e.stopPropagation();
         });
@@ -396,10 +406,9 @@ var cards = [
     }
 
 function addCopyright() {
-    var html = "<div id=copyright>© Chris Seddon, 17 January 2018</div>";
-    $("#dummy").append($(html).clone()).css("float", "none");
     $("#copyright").css("color", "black")
-                   .css("clear", "both")
+                   .css("bottom", "0px")
+                   .css("position", "fixed")
                    .css("width", "50vw");
 }
 
@@ -429,7 +438,7 @@ $(document).ready(function() {
     <div id='clock'></div>
     <div id='hide'></div>    
     <input id="name" type="text" name="name" value="">
-    <div id="dummy"></div>
+    <div id="copyright">© Chris Seddon, 17 January 2018</div>
 </body>
 </html>
 
