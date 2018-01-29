@@ -249,38 +249,7 @@ var cards = [
 //        setupPack();
         setupTable(40);
         addCopyright();
-//        doit();
     });
-</script>
-<script>
-
-function doit() {
-	var row1 = new Stack(1);
-	row1.push(17);
-	row1.push(30);
-	row1.push(29);
-	row1.push(28);
-	
-    var row2 = new Stack(2);
-    row2.push(10);
-    row2.push(11);
-    row2.push(12);
-
-    var row3 = new Stack(3);
-    row3.push(41);
-    row3.push(42);
-    row3.push(43);
-
-    row1.extend(row2);
-    row1.transferToAnotherStack(3,row3);
-    console.log("====1========")
-    row1.list();
-    console.log("====2========")
-    row2.list();
-    console.log("====3========")
-    row3.list();
-}
-
 </script>
 </head>
 <body>
