@@ -12,6 +12,7 @@
 <script src="jquery_cookie.js"></script>
 <script type="text/javascript" src="jquery-ui-1.12.1.js"></script>
 <script src="jquery.mobile.custom.js"></script>
+<script src="jquery.ui.touch-punch.min.js"></script>
 <script src="stack.js"></script>
 
 <script>
@@ -26,7 +27,10 @@ var debug = false;
 }
 
 body {
-    overflow:hidden;
+    overflow: hidden;
+    /* disable pull to refresh */
+    overflow-y: hidden;
+    overscroll-behavior-y: contain;
 }
 div.ui-page.ui-page-theme-a.ui-page-active {
     padding-left: 2vw;

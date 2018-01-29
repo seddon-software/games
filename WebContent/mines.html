@@ -19,6 +19,7 @@
 <style type="text/css">
     body {
         margin-left: 2vw;
+        overscroll-behavior: none;
     }
     h1 {
         font-size: 14pt;
@@ -28,6 +29,7 @@
         border-style: groove;
         border-color: grey;
         filter: drop-shadow(1px 1px 5px #808080);    
+        overscroll-behavior: contain;
     }
     .square {
         float: left;
@@ -43,7 +45,8 @@
         border-style: solid;
         border-color: white;
         background-color: rgb(255, 218, 0);
-        filter: drop-shadow(1px 1px 5px #808080);    
+        filter: drop-shadow(1px 1px 5px #808080);
+        overscroll-behavior: contain;
     }
     #help, #mode, #hits, #minesDetected, #remainingMines, #cellsSelected {
         padding-top: 0vw;
