@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<!-- © Chris Seddon, 25 January 2018 -->
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name='viewport' 
+     content='width=device-width, height=device-height, user-scalable=no,
+              initial-scale=1.0, maximum-scale=1.0, user-scalable=0' />
+<link rel="stylesheet" href="jquery.mobile-1.4.5.css">
+<link rel="stylesheet" href="jquery-ui-1.12.1.css">
+<script type="text/javascript" src="jquery-3.2.1.js"></script>
+<script src="jquery_cookie.js"></script>
+<script type="text/javascript" src="jquery-ui-1.12.1.js"></script>
+<script src="jquery.mobile.custom.js"></script>
+<script src="stack.js"></script>
+
+<script>
+var debug = false;
+</script>
+<style type="text/css">
+
+.ui-draggable-disabled {
+    border-style: solid;
+    border-color: green;
+    border-width: 0px;
+}
+
+body {
+    overflow:hidden;
+}
+div.ui-page.ui-page-theme-a.ui-page-active {
+    padding-left: 2vw;
+}
+
+div#reservoir div {
+    position: absolute;
+    width: 6vw;
+    padding-left: 1vw;
+    clear: both;
+}
+div#table div {
+    position: absolute;
+    width: 6vw;
+    padding-left: 0vw;
+    clear: both;
+}
+div#x {
+    position: relative;
+    clear: both;
+}
+
+</style>
+<script>
+
+var android = navigator.appVersion.indexOf("Android") !== -1;
+var cards = [
+    "2_of_clubs.svg",
+    "3_of_clubs.svg",
+    "4_of_clubs.svg",
+    "5_of_clubs.svg",
+    "6_of_clubs.svg",
+    "7_of_clubs.svg",
+    "8_of_clubs.svg",
+    "9_of_clubs.svg",
+    "10_of_clubs.svg",
+    "jack_of_clubs.svg",
+    "queen_of_clubs.svg",
+    "king_of_clubs.svg",
+    "ace_of_clubs.svg",
+    "2_of_diamonds.svg",
+    "3_of_diamonds.svg",
+    "4_of_diamonds.svg",
+    "5_of_diamonds.svg",
+    "6_of_diamonds.svg",
+    "7_of_diamonds.svg",
+    "8_of_diamonds.svg",
+    "9_of_diamonds.svg",
+    "10_of_diamonds.svg",
+    "jack_of_diamonds.svg",
+    "queen_of_diamonds.svg",
+    "king_of_diamonds.svg",
+    "ace_of_diamonds.svg",
+    "2_of_hearts.svg",
+    "3_of_hearts.svg",
+    "4_of_hearts.svg",
+    "5_of_hearts.svg",
+    "6_of_hearts.svg",
+    "7_of_hearts.svg",
+    "8_of_hearts.svg",
+    "9_of_hearts.svg",
+    "10_of_hearts.svg",
+    "jack_of_hearts.svg",
+    "queen_of_hearts.svg",
+    "king_of_hearts.svg",
+    "ace_of_hearts.svg",
+    "2_of_spades.svg",
+    "3_of_spades.svg",
+    "4_of_spades.svg",
+    "5_of_spades.svg",
+    "6_of_spades.svg",
+    "7_of_spades.svg",
+    "8_of_spades.svg",
+    "9_of_spades.svg",
+    "10_of_spades.svg",
+    "jack_of_spades.svg",
+    "queen_of_spades.svg",
+    "king_of_spades.svg",
+    "ace_of_spades.svg"];
+
+    function shuffle(array) {
+        let counter = array.length;
+        // while there are elements in the array
+        while (counter > 0) {
+            // Pick a random index
+            let index = Math.floor(Math.random() * counter);
+            counter--;
+            // swap the last element with it
+            let temp = array[counter];
+            array[counter] = array[index];
+            array[index] = temp;
+        }
+        return array;
+    }
+
+    function startClock(offset) {
+        var start = new Date().valueOf() - 1000 * offset;
+        clock = setInterval(function() {        
+            var now = new Date().valueOf();
+            duration = Math.round((now - start)/1000);
+            var minutes = Math.floor(duration/60)
+            var seconds = duration % 60;
+            seconds = seconds < 10 ? "0" + seconds : seconds
+            message = minutes + ":" + seconds;
+            $("#clock").text(message);
+        }, 1000);
+        return clock;
+    }
+    
+    function setupReservoir() {
+        for(var row = 0; row < 8; row++) {
+            var theHtml = "<div><img style='width: 100%; height: auto;' src='images/cards/blank.svg'/></div>";
+            var childDiv = $(theHtml).clone();
+            var selector = "div#resevoir";
+            $(selector).append(childDiv);
+            childDiv.draggable();
+            childDiv.droppable();
+            childDiv.css("float", "left")
+            .css("width", "" + width + "vw")
+            .css("padding", "" + padding + "vw");
+        }
+    }
+    
+    function setupPack() {
+        var theHtml = "<div><img style='width: 100%; height: auto;' src='images/cards/blank2.svg'/></div>";
+        var childDiv = $(theHtml).clone();
+        var selector = "div#pack";
+        $(selector).append(childDiv);
+        childDiv.draggable();
+        childDiv.css("float", "left")
+                .css("width", "" + width + "vw")
+                .css("padding", "" + padding + "vw")
+                .css("padding-left", "" + (width + 3*padding) + "vw");
+    }
+    
+    function setupTable(n) {
+        for(var col = 0; col < 10; col++) {
+            theStack = new Stack(col);
+            stacks.push(theStack);
+            for(var row = 0; row < n/10; row++) {
+                theStack.push();
+            }
+            theStack.doLayout();
+            theStack.setupDraggableOnBottomCard();
+        }
+    }
+    
+    function addCopyright() {
+        $("#copyright").css("color", "black")
+                       .css("bottom", "0px")
+                       .css("position", "fixed")
+                       .css("width", "50vw");
+    }
+
+    function dragDrop () {
+        $("#dvSource img").draggable({
+            revert: "invalid",
+            refreshPositions: true,
+            drag: function (event, ui) {
+                ui.helper.addClass("draggable");
+            },
+            stop: function (event, ui) {
+                ui.helper.removeClass("draggable");
+                var image = this.src.split("/")[this.src.split("/").length - 1];
+                if ($.ui.ddmanager.drop(ui.helper.data("draggable"), event)) {
+                    alert(image + " dropped.");
+                }
+                else {
+                    alert(image + " not dropped.");
+                }
+            }
+        });
+        $("#dvDest").droppable({
+            drop: function (event, ui) {
+                if ($("#dvDest img").length == 0) {
+                    $("#dvDest").html("");
+                }
+                ui.draggable.addClass("dropped");
+                $("#dvDest").append(ui.draggable);
+            }
+        });
+    }        
+    
+    function shuffleDoublePack() {
+        function shuffle(array) {
+            var counter = array.length;
+            // while there are elements in the array
+            while (counter > 0) {
+                // Pick a random index
+                var index = Math.floor(Math.random() * counter);
+                counter--;
+                // swap the last element with it
+                var temp = array[counter];
+                array[counter] = array[index];
+                array[index] = temp;
+            }
+            return array;
+        }
+        var numberOfCards = 52 * 2;
+        var cardIndex = Array.apply(null, {length: numberOfCards}).map(Number.call, Number);
+        shuffle(cardIndex);
+        return cardIndex;  
+    }
+
+    var cardIndex;
+    var cardBeingDragged;
+    var stacks = [];
+    
+    $(document).ready(function() {
+        cardIndex = shuffleDoublePack();
+        cardIndex[100] = 9;
+        cardIndex[101] = 10;
+        cardIndex[102] = 11;
+        cardIndex[103] = 40;
+//        setupReservoir();
+//        setupPack();
+        setupTable(40);
+        addCopyright();
+//        doit();
+    });
+</script>
+<script>
+
+function doit() {
+	var row1 = new Stack(1);
+	row1.push(17);
+	row1.push(30);
+	row1.push(29);
+	row1.push(28);
+	
+    var row2 = new Stack(2);
+    row2.push(10);
+    row2.push(11);
+    row2.push(12);
+
+    var row3 = new Stack(3);
+    row3.push(41);
+    row3.push(42);
+    row3.push(43);
+
+    row1.extend(row2);
+    row1.transferToAnotherStack(3,row3);
+    console.log("====1========")
+    row1.list();
+    console.log("====2========")
+    row2.list();
+    console.log("====3========")
+    row3.list();
+}
+
+</script>
+</head>
+<body>
+    <h1>SPIDER</h1>
+    <div id='resevoir'></div>
+    <div id='pack'></div>
+    <div id='x'>
+        <div id='table'></div>
+    </div>
+    <div id="copyright">© Chris Seddon, 25 January 2018</div>
+</body>
+</html>
+

@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<!-- © Chris Seddon, 25 January 2018 -->
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name='viewport' 
+     content='width=device-width, height=device-height, user-scalable=no,
+              initial-scale=1.0, maximum-scale=1.0, user-scalable=0' />
+<link rel="stylesheet" href="jquery.mobile-1.4.5.css">
+<link rel="stylesheet" href="jquery-ui-1.12.1.css">
+<script type="text/javascript" src="jquery-3.2.1.js"></script>
+<script src="jquery_cookie.js"></script>
+<script type="text/javascript" src="jquery-ui-1.12.1.js"></script>
+<script src="jquery.mobile.custom.js"></script>
+
+<script>
+var debug = false;
+</script>
+<style type="text/css">
+
+body {
+    overflow:hidden;
+}
+div.ui-page.ui-page-theme-a.ui-page-active {
+    padding-left: 2vw;
+}
+
+div#reservoir div {
+    position: absolute;
+    width: 6vw;
+    padding-left: 1vw;
+    clear: both;
+}
+div#table div {
+    position: absolute;
+    width: 6vw;
+    padding-left: 0vw;
+    clear: both;
+}
+div#x {
+    position: relative;
+    clear: both;
+}
+
+</style>
+<script>
+
+var android = navigator.appVersion.indexOf("Android") !== -1;
+var cards = [
+    { "name":"2_of_clubs.svg"},
+    { "name":"2_of_diamonds.svg"},
+    { "name":"2_of_hearts.svg"},
+    { "name":"2_of_spades.svg"},
+    { "name":"3_of_clubs.svg"},
+    { "name":"3_of_diamonds.svg"},
+    { "name":"3_of_hearts.svg"},
+    { "name":"3_of_spades.svg"},
+    { "name":"4_of_clubs.svg"},
+    { "name":"4_of_diamonds.svg"},
+    { "name":"4_of_hearts.svg"},
+    { "name":"4_of_spades.svg"},
+    { "name":"5_of_clubs.svg"},
+    { "name":"5_of_diamonds.svg"},
+    { "name":"5_of_hearts.svg"},
+    { "name":"5_of_spades.svg"},
+    { "name":"6_of_clubs.svg"},
+    { "name":"6_of_diamonds.svg"},
+    { "name":"6_of_hearts.svg"},
+    { "name":"6_of_spades.svg"},
+    { "name":"7_of_clubs.svg"},
+    { "name":"7_of_diamonds.svg"},
+    { "name":"7_of_hearts.svg"},
+    { "name":"7_of_spades.svg"},
+    { "name":"8_of_clubs.svg"},
+    { "name":"8_of_diamonds.svg"},
+    { "name":"8_of_hearts.svg"},
+    { "name":"8_of_spades.svg"},
+    { "name":"9_of_clubs.svg"},
+    { "name":"9_of_diamonds.svg"},
+    { "name":"9_of_hearts.svg"},
+    { "name":"9_of_spades.svg"},
+    { "name":"10_of_clubs.svg"},
+    { "name":"10_of_diamonds.svg"},
+    { "name":"10_of_hearts.svg"},
+    { "name":"10_of_spades.svg"},
+    { "name":"jack_of_clubs.svg"},
+    { "name":"jack_of_diamonds.svg"},
+    { "name":"jack_of_hearts.svg"},
+    { "name":"jack_of_spades.svg"},
+    { "name":"queen_of_clubs.svg"},
+    { "name":"queen_of_diamonds.svg"},
+    { "name":"queen_of_hearts.svg"},
+    { "name":"queen_of_spades.svg"},
+    { "name":"king_of_clubs.svg"},
+    { "name":"king_of_diamonds.svg"},
+    { "name":"king_of_hearts.svg"},
+    { "name":"king_of_spades.svg"},
+    { "name":"ace_of_clubs.svg"},
+    { "name":"ace_of_diamonds.svg"},
+    { "name":"ace_of_hearts.svg"},
+    { "name":"ace_of_spades.svg"];
+
+    function shuffle(array) {
+        let counter = array.length;
+        // while there are elements in the array
+        while (counter > 0) {
+            // Pick a random index
+            let index = Math.floor(Math.random() * counter);
+            counter--;
+            // swap the last element with it
+            let temp = array[counter];
+            array[counter] = array[index];
+            array[index] = temp;
+        }
+        return array;
+    }
+
+    function startClock(offset) {
+        var start = new Date().valueOf() - 1000 * offset;
+        clock = setInterval(function() {        
+            var now = new Date().valueOf();
+            duration = Math.round((now - start)/1000);
+            var minutes = Math.floor(duration/60)
+            var seconds = duration % 60;
+            seconds = seconds < 10 ? "0" + seconds : seconds
+            message = minutes + ":" + seconds;
+            $("#clock").text(message);
+        }, 1000);
+        return clock;
+    }
+    
+    function setupReservoir() {
+        for(var row = 0; row < 8; row++) {
+            var theHtml = "<div><img style='width: 100%; height: auto;' src='images/cards/blank.svg'/></div>";
+            var childDiv = $(theHtml).clone();
+            var selector = "div#resevoir";
+            $(selector).append(childDiv);
+            childDiv.draggable();
+            childDiv.droppable();
+            childDiv.css("float", "left")
+            .css("width", "" + width + "vw")
+            .css("padding", "" + padding + "vw");
+        }
+    }
+    
+    function setupPack() {
+        var theHtml = "<div><img style='width: 100%; height: auto;' src='images/cards/blank2.svg'/></div>";
+        var childDiv = $(theHtml).clone();
+        var selector = "div#pack";
+        $(selector).append(childDiv);
+        childDiv.draggable();
+        childDiv.css("float", "left")
+                .css("width", "" + width + "vw")
+                .css("padding", "" + padding + "vw")
+                .css("padding-left", "" + (width + 3*padding) + "vw");
+    }
+    
+    function setupTable() {
+	    for(var row = 0; row < 10; row++) {
+	        for(col = 0; col < 15; col++) {
+	            /* add divs and images for the row */
+	            var part1 = "<div><img style='width: 100%; height: auto;' src='images/cards/";
+	            var part2 = cards[col];
+	            var part3 = "'/></div>";
+	            var theHtml = part1 + part2 + part3;
+	            var childDiv = $(theHtml).clone();
+                var selector = "div#table";
+	            $(selector).append(childDiv);
+	            childDiv.css("z-index", col+10)
+                .css("width", "" + width + "vw")
+                .css("padding", "" + padding + "vw")
+                    .css("left", "" + row*(width + 2*padding) + "vw")
+                    .css("top", "+" + (1+col)*2 + "vh");
+                childDiv.draggable(
+                        { 
+                          drag: function(e, ui) { 
+                              console.log("dragging"); 
+                          
+                          } 
+                        });
+                childDiv.droppable(
+                        { 
+                          drop: function(e, ui) { 
+                              console.log("dropped");
+                              console.log($(this).data("card-info").card);
+                          } 
+                        });
+	            /* add attributes */
+	            childDiv.data("card-info", 
+	                { 
+	                    row:row, 
+	                    col:col, 
+	                    state:"hidden", 
+	                    pip:cards[col], 
+	                    card:cards[col] 
+	                });
+	        }
+	    }
+    }
+
+    function addCopyright() {
+        $("#copyright").css("color", "black")
+                       .css("bottom", "0px")
+                       .css("position", "fixed")
+                       .css("width", "50vw");
+    }
+
+    function dragDrop () {
+        $("#dvSource img").draggable({
+            revert: "invalid",
+            refreshPositions: true,
+            drag: function (event, ui) {
+                ui.helper.addClass("draggable");
+            },
+            stop: function (event, ui) {
+                ui.helper.removeClass("draggable");
+                var image = this.src.split("/")[this.src.split("/").length - 1];
+                if ($.ui.ddmanager.drop(ui.helper.data("draggable"), event)) {
+                    alert(image + " dropped.");
+                }
+                else {
+                    alert(image + " not dropped.");
+                }
+            }
+        });
+        $("#dvDest").droppable({
+            drop: function (event, ui) {
+                if ($("#dvDest img").length == 0) {
+                    $("#dvDest").html("");
+                }
+                ui.draggable.addClass("dropped");
+                $("#dvDest").append(ui.draggable);
+            }
+        });
+    }        
+    
+    
+    var width = 8;
+    var padding = 0.25;
+    $(document).ready(function() {
+        setupReservoir();
+        setupPack();
+        setupTable();
+        addCopyright();
+    });
+</script>
+</head>
+<body>
+    <h1>SPIDER</h1>
+    <div id='resevoir'></div>
+    <div id='pack'></div>
+    <div id='x'>
+        <div id='table'></div>
+    </div>
+    <div id="copyright">© Chris Seddon, 25 January 2018</div>
+</body>
+</html>
+
