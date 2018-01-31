@@ -131,7 +131,7 @@ class Stack {
                             if(isStackEmpty) {
                                 howMany = count;
                             } else {
-                                if(topPip - draggedPip <= cardsCanDrop.count)
+                                if(topPip - draggedPip <= count)
                                 // 567 on 8
                                 // toppip = 8
                                 // dragpip = 5
