@@ -23,6 +23,12 @@ var debug = false;
 .ui-draggable-disabled {
     border-style: solid;
     border-color: green;
+    border-width: 3px;
+}
+
+.ui-droppable {
+    border-style: solid;
+    border-color: red;
     border-width: 0px;
 }
 
@@ -56,6 +62,9 @@ div#x {
 </style>
 <script>
 
+var STACKS = 10;
+var WIDTH = 8;
+var PADDING = 0.25;
 var android = navigator.appVersion.indexOf("Android") !== -1;
 var cards = [
     "2_of_clubs.svg",
@@ -141,16 +150,9 @@ var cards = [
     }
     
     function setupReservoir() {
-        for(var row = 0; row < 8; row++) {
-            var theHtml = "<div><img style='width: 100%; height: auto;' src='images/cards/blank.svg'/></div>";
-            var childDiv = $(theHtml).clone();
-            var selector = "div#resevoir";
-            $(selector).append(childDiv);
-            childDiv.draggable();
-            childDiv.droppable();
-            childDiv.css("float", "left")
-            .css("width", "" + width + "vw")
-            .css("padding", "" + padding + "vw");
+        for(var col = 0; col < 8; col++) {
+            theReservoir = new Reservoir(col);
+            reservoirs.push(theReservoir);         
         }
     }
     
@@ -166,15 +168,20 @@ var cards = [
                 .css("padding-left", "" + (width + 3*padding) + "vw");
     }
     
-    function setupTable(n) {
-        for(var col = 0; col < 10; col++) {
+    function setupTable(numberOfCardsToDeal) {
+        for(var col = 0; col < STACKS; col++) {
             theStack = new Stack(col);
             stacks.push(theStack);
-            for(var row = 0; row < n/10; row++) {
-                theStack.push();
-            }
-            theStack.doLayout();
-            theStack.setupDraggableOnBottomCard();
+        }
+        var col = 0;
+        for(var i = 0; i < numberOfCardsToDeal; i++) {
+            stacks[col].push();
+            col++;
+            if(col === stacks.length) col = 0;
+        }
+        for(var col = 0; col < 10; col++) {
+            stacks[col].doLayout();
+            stacks[col].setupDraggableOnBottomCard();
         }
     }
     
@@ -185,35 +192,6 @@ var cards = [
                        .css("width", "50vw");
     }
 
-    function dragDrop () {
-        $("#dvSource img").draggable({
-            revert: "invalid",
-            refreshPositions: true,
-            drag: function (event, ui) {
-                ui.helper.addClass("draggable");
-            },
-            stop: function (event, ui) {
-                ui.helper.removeClass("draggable");
-                var image = this.src.split("/")[this.src.split("/").length - 1];
-                if ($.ui.ddmanager.drop(ui.helper.data("draggable"), event)) {
-                    alert(image + " dropped.");
-                }
-                else {
-                    alert(image + " not dropped.");
-                }
-            }
-        });
-        $("#dvDest").droppable({
-            drop: function (event, ui) {
-                if ($("#dvDest img").length == 0) {
-                    $("#dvDest").html("");
-                }
-                ui.draggable.addClass("dropped");
-                $("#dvDest").append(ui.draggable);
-            }
-        });
-    }        
-    
     function shuffleDoublePack() {
         function shuffle(array) {
             var counter = array.length;
@@ -238,17 +216,41 @@ var cards = [
     var cardIndex;
     var cardBeingDragged;
     var stacks = [];
+    var reservoirs = [];
     
     $(document).ready(function() {
         cardIndex = shuffleDoublePack();
-        cardIndex[100] = 9;
-        cardIndex[101] = 10;
-        cardIndex[102] = 11;
-        cardIndex[103] = 40;
-//        setupReservoir();
-//        setupPack();
-        setupTable(40);
+
+        cardIndex[88] = 7;
+        cardIndex[89] = 81;
+        cardIndex[90] = 71;
+        cardIndex[91] = 61;
+
+        cardIndex[88] = 7;
+        cardIndex[89] = 81;
+        cardIndex[90] = 71;
+        cardIndex[91] = 61;
+
+        cardIndex[92] = 82;
+        cardIndex[93] = 81;
+        cardIndex[94] = 71;
+        cardIndex[95] = 61;
+
+        cardIndex[96] = 29;
+        cardIndex[97] = 28;
+        cardIndex[98] = 27;
+        cardIndex[99] = 26;
+
+        cardIndex[100] = 6;
+        cardIndex[101] = 5;
+        cardIndex[102] = 4;
+        cardIndex[103] = 3;
+        
+        setupReservoir();
+//        setupPack(60);
+        setupTable(20);
         addCopyright();
+        Stack.debugIt();
     });
 </script>
 </head>
