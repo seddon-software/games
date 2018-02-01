@@ -76,7 +76,6 @@ class Stack {
                     cardBeingDragged = $(this);
                 },
                 stop: function(e, ui) {
-                    console.log("stop drag");   
                     theStack = Stack.getStack(this);
                     theStack.doLayout();
                 } 
@@ -126,31 +125,18 @@ class Stack {
                             }
                         } 
                         if(cardsCanDrop.direction === "down") {
-                            console.log(maxCardsCanMove + ":" + emptyStacks);
                             var count = (cardsCanDrop.count <= maxCardsCanMove) ? cardsCanDrop.count : maxCardsCanMove;
                             if(isStackEmpty) {
                                 howMany = count;
                             } else {
                                 if(topPip - draggedPip <= count)
-                                // 567 on 8
-                                // toppip = 8
-                                // dragpip = 5
-                                // !!!!!!!!!!!!!!
                                     howMany = topPip - draggedPip;
                             }
                         }
-//                        if(cardsCanDrop.direction === "up+down")  {
-//                            var draggedPip = Stack.pip(cardBeingDragged);
-//                            if(draggedPip - topPip === 1) cardsCanDrop.direction = "down";
-//                            if(topPip - draggedPip === 1) cardsCanDrop.direction = "up";
-//                            return 1; 
-//                        }
-                        // drop not allowed
                         return howMany;
                     }
 
                     if(cardBeingDragged === undefined) return;  // multiple drops
-                    console.log("dropped");
                     var dragStackNo = cardBeingDragged.data("card-info").col;
                     var dropStackNo = $(this).data("card-info").col;
                     var dropStack = stacks[dropStackNo];
@@ -218,7 +204,6 @@ class Stack {
         for(var i = 0; i < count; i++) {
             // remove div from temporary array
             var div = divs.pop();
-            console.log(div.data("card-info").card);
             stack.childDivs.push(div);
         }
     }
@@ -245,7 +230,6 @@ class Stack {
         var length = dropStack.childDivs.length;
         for(var i = 0; i < count; i++) {
             var div = dropStack.childDivs[length - 1 - count];
-            console.log(div.data("card-info").card);
             $(selector).append(div);
         }
         
@@ -262,7 +246,6 @@ class Stack {
             var stack = stacks[i];
             for(var row = 0; row < stack.length(); row++) {
                 var div = stack.childDivs[row];
-                console.log("" + i + ":" + div.data("card-info").col);
             }
         }
     }
@@ -272,19 +255,23 @@ class Reservoir {
     
     constructor(col) {
         this.col = col;
+        this.width = WIDTH;
+        this.padding = PADDING;
         this.childDivs = [];
         var theHtml = "<div><img style='width: 100%; height: auto;' src='images/cards/blank2.svg'/></div>";
         var childDiv = $(theHtml).clone();
-        var selector = "div#resevoir";
+        var selector = "div#reservoir";
         $(selector).append(childDiv);
         this.addAttributes(childDiv);
         this.makeDroppable(childDiv);
-        childDiv.css("float", "left")
-                .css("width", "" + WIDTH + "vw")
-                .css("padding", "" + PADDING + "vw");
         this.childDivs.push(childDiv);
+        Reservoir.position(this.childDivs[0]);
     }
-    
+
+    static position(div) {
+        div.css("width", "" + WIDTH + "vw")
+           .css("padding", "" + PADDING + "vw")
+    }
     length() {
         return this.childDivs.length;  
     }
@@ -298,42 +285,73 @@ class Reservoir {
     
     
     makeDroppable(div) {
-        function transfer(dragStack, dropReservoir, numberOfCards) {
-            console.log("xfer");
-            dragStack.findDirection(dragStack);
-            // disable drag on previous top of drop stack
-            var count = cardsCanDrop.count;
-            var length = dropStack.childDivs.length;
-            var top = dropStack.childDivs[length - 1];
-            top.draggable('disable');
-
-            // pop divs to be transfered and push to new stack
-            var childDivs = Stack.popDivs(dragStack, count);
-            
-            if(cardsCanDrop.direction == "up") childDivs.reverse();
-            Stack.pushDivs(dropStack, childDivs);
-            
-            // add divs to dom
-            var selector = "div#col" + dropStack.col;
-            var length = dropStack.childDivs.length;
-            for(var i = 0; i < count; i++) {
-                var div = dropStack.childDivs[length - 1 - count];
-                console.log(div.data("card-info").card);
-                $(selector).append(div);
+        function howManyCardsCanBeBanked(dragStack) {
+            var childDivs = dragStack.childDivs;
+            var top = childDivs[childDivs.length - 1];
+            var count = 1;
+            for(var i = childDivs.length - 2; i > 0; i--) {
+                var topPip = Stack.pip(top);
+                var next = childDivs[i];
+                var nextPip = Stack.pip(next);
+                if(nextPip - topPip !== 1) break;
+                count++;
+                top = next;
             }
+            return count;
+        }
+        
+        function transfer(dragStack, dropReservoir, numberOfCards) {
+            function popFromDragStack() {
+                var divs = [];
+                for(var i = 0; i < numberOfCards; i++) {
+                    divs.push(dragStack.childDivs.pop())
+                }
+                return divs;
+            }
+            function pushToDropReservoir() {
+                for(var i = 0; i < numberOfCards; i++) {
+                    dropReservoir.childDivs.push(divs.pop())
+                }
+            }
+            function disableDragOnReservoir() {
+                var divs = dropReservoir.childDivs;
+                var top = divs[divs.length - 1];
+                top.draggable('disable');                
+            }
+            function enableDragForTopOfDragStack() {
+                var divs = dragStack.childDivs;
+                var top = divs[divs.length - 1];
+                top.draggable('enable');                                
+            }
+            function moveChildDivsInDOM() {
+                var selector = "reservoir#col" + dropReservoir.col;
+                var length = dropReservoir.childDivs.length;
+                for(var i = 0; i < numberOfCards; i++) {
+                    var div = dropReservoir.childDivs[length - 1 - numberOfCards];
+                    $(selector).append(div);
+                }
+            }
+            function doLayout() {
+                var length = dropReservoir.childDivs.length;
+                for(var i = 0; i < length; i++) {
+                    var div = dropReservoir.childDivs[i];
+                    Reservoir.position(div);
+                }                
+            }
+            console.log("xfer");
             
-            // make top div draggable on stacks
-            if(dragStack.length() > 0) dragStack.setupDraggableOnBottomCard();
-            if(dropStack.length() > 0) dropStack.setupDraggableOnBottomCard();
-            
-            // redo layout for stack
-            dropStack.doLayout();
+            var divs = popFromDragStack();
+            pushToDropReservoir(divs);
+            disableDragOnReservoir();
+            enableDragForTopOfDragStack();
+            moveChildDivsInDOM();
+            doLayout();
+            // (optional) update attributes
         }
 
         div.droppable(
             { 
                 drop: function (event, ui) { 
-                    return;
                     if(cardBeingDragged === undefined) return;  // multiple drops
                     console.log("dropped");
                     var dragStackNo = cardBeingDragged.data("card-info").col;
@@ -341,22 +359,20 @@ class Reservoir {
                     var dragStack = stacks[dragStackNo];
                     var dropReservoir = reservoirs[dropReservoirNo];
 
-                    var topPip = dropReservoir.length() - 1;
-                    var childDivs = dragStack.childDivs;
-                    var dragIndex = childDivs[childDivs.length - 1].data("card-info").index;
-                    var dragPip = Stack.pip(cardBeingDragged);
-                    console.log(dragPip + ":" + topPip);
+                    var howMany = howManyCardsCanBeBanked(dragStack);
                     
+                    var dragPip = Stack.pip(cardBeingDragged);
+                    var topPip;
+                    if(dropReservoir.length() === 1) {
+                        topPip = 0;
+                    } else {
+                        var top = dropReservoir.childDivs[dropReservoir.length()];
+                        topPip = Stack.pip(top);
+                    }
                     if(dragPip - topPip === 1) {
-                        var numberOfCards = 1;
+                        var numberOfCards = howMany;
                         transfer(dragStack, dropReservoir, numberOfCards);
                     }
-//                    var cardsCanDrop = findDirection(dragStack);
-//                    console.log(cardsCanDrop);
-//                    cardsCanDrop.count = howManyCardsCanMove(dropStack, cardBeingDragged, cardsCanDrop);
-//                    Stack.transferMultiple(dropStack, dragStack, cardsCanDrop);
-//                    cardBeingDragged = undefined;  // to avoid multiple drops
-//                    if(debug) Stack.doDebug();
                 }
             });        
     }    

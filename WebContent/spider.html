@@ -43,10 +43,10 @@ div.ui-page.ui-page-theme-a.ui-page-active {
 }
 
 div#reservoir div {
-    position: absolute;
+    position: relative;
     width: 6vw;
     padding-left: 1vw;
-    clear: both;
+    float: left;
 }
 div#table div {
     position: absolute;
@@ -246,9 +246,10 @@ var cards = [
         cardIndex[102] = 3;
         cardIndex[103] = 4;
         
+//        cardIndex = shuffleDoublePack();
         setupReservoir();
 //        setupPack(60);
-        setupTable(20);
+        setupTable(44);
         addCopyright();
         Stack.debugIt();
     });
@@ -256,7 +257,7 @@ var cards = [
 </head>
 <body>
     <h1>SPIDER</h1>
-    <div id='resevoir'></div>
+    <div id='reservoir'></div>
     <div id='pack'></div>
     <div id='x'>
         <div id='table'></div>
