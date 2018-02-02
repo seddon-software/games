@@ -1,379 +1,294 @@
 class Stack {
 
-    constructor(col) {
-        // expose internal methods
-        var findDirection = undefined;
-
-        this.width = WIDTH;
-        this.padding = PADDING;
-        this.col = col;
-        this.childDivs = [];
-        var id = "col" + col;
-        var theHtml = "<div id=" + id + "></div>";
-        var colDiv = $(theHtml).clone();
-        $("div#table").append(colDiv);
-        this.pushBlank();
-    }
-    
-    static getStack(div) {
-        var stackNo = $(div).data("card-info").col;
-        return stacks[stackNo];
+    constructor(id, index, type) {
+        this.id = id;
+        this.type = type;
+        this.index = index;
+        this.cards = [];
     }
 
-    static howManyCardsInSequence(stack, direction) {
-        var count = 1;
-        var divs = stack.childDivs;
-        var top = divs[divs.length - 1];
-        for(var i = divs.length - 2;  i > 0; i--) {
-            var next = divs[i];
-            var topPip = Stack.pip(top);
-            var nextPip = Stack.pip(next);
-            if(direction === "ascending") if((topPip - nextPip) === 1) count++; else break;                
-            if(direction === "descending") if((nextPip - topPip) === 1) count++; else break;                
-            top = next;
+    static find(searchType, searchId) {
+        var result;
+        for(var i = 0; i < stacks.length; i++) {
+            var type = stacks[i].type;
+            var id = stacks[i].id;
+            if(searchType === type && searchId === id) {
+                result = stacks[i];
+            } 
         }
-        return count;
+        return result;
     }
     
-    static pip(card) {
-        var index = card.data("card-info").index;
-        // Ace(12) -> 1
-        // Two(0) -> 2
-        // ...
-        // King(11) -> 13
-        return (index + 1) % 13 + 1;
-    }
-
-    addAttributes(div, index) {
-        var card = (index === undefined) ? "blank.svg" : cards[index%52];
-        
-        div.data("card-info", 
-            { 
-                col:this.col,
-                index:index,
-                card:card
-            });
-    }
-
     doLayout() {
-        for(var i = 0; i < this.length(); i++) {  
-            this.childDivs[i].data("card-info").col = this.col;
-            this.childDivs[i].css("z-index", i)
-                             .css("width", "" + this.width + "vw")
-                             .css("left", "" + this.col*(this.width + 2*this.padding) + "vw")
-                             .css("top", "+" + (1+i)*2 + "vh");
+        function tableLayout() {
+            for(var i = 0; i < stack.cards.length; i++) {
+                var card = stack.cards[i];
+                var div = DOM[card];
+                div.css("position", "absolute")
+                   .css("width", WIDTH + "vw")
+                   .css("left", "" + (stack.index * LEFT_SEPARATION) + "vw")
+                   .css("top", "" + (TOP_SEPARATION * i + TOP_OFFSET) + "vw")
+                   .css("z-index", "" + i);
+            }
         }
+        
+        function bankLayout() {
+            for(var i = 0; i < stack.cards.length; i++) {
+                var card = stack.cards[i];
+                var div = DOM[card];
+                div.css("position", "absolute")
+                   .css("class", "yyyyyyyy")
+                   .css("width", WIDTH + "vw")
+                   .css("left", "" + i*2 + "vw")
+                   .css("top", "" + (i*2 + 10) + "vw")
+                   .css("visibilty", "hidden")
+                   .css("z-index", "" + i);
+            }            
+        }
+        
+        function packLayout() {
+            for(var i = 0; i < stack.cards.length; i++) {
+                var card = stack.cards[i];
+                var div = DOM[card];
+                div.css("position", "absolute")
+                   .css("width", WIDTH + "vw")
+                   .css("left", "" + 90 + "vw")
+                   .css("top", "" + 4 + "vw")
+                   .css("z-index", "" + i);
+            }                        
+        }
+        var stack = this;
+        if(this.type === "table") tableLayout();
+        if(this.type === "bank") bankLayout();
+        if(this.type === "pack") packLayout();
     }
     
-    length() {
-        return this.childDivs.length;
+    makeDroppable(div) {
+        div.droppable(
+            { 
+                drop:   function(event, ui) { 
+                            //console.log("dropping");
+                            doDrop(this); 
+                        }
+            });
     }
     
     makeDraggable(div) {
         div.draggable(
             { 
-                drag: function(e, ui) { 
-                    cardBeingDragged = $(this);
-                },
-                stop: function(e, ui) {
-                    theStack = Stack.getStack(this);
-                    theStack.doLayout();
-                } 
-            });        
-    }
-    
-    makeDroppable(div) {
-        div.droppable(
-            { 
-                drop: function (event, ui) {
-                    function findDirection(stack) {
-                        var up = Stack.howManyCardsInSequence(stack, "ascending");
-                        var down = Stack.howManyCardsInSequence(stack, "descending");
-                        var result = {};
-                        if(up > 1) {
-                            result.direction = "up";
-                            result.count = up;
-                        } else if(down >= 1) {
-                            result.direction = "down";
-                            result.count = down;
-                        }
-                        return result;
-                    }
-                    
-                    function howManyCardsCanMove(stack, cardBeingDragged, cardsCanDrop) {
-                        function howManyEmptyStacks() {
-                            var count = 0;
-                            for(var i = 0; i < stacks.length; i++) {
-                                if(stacks[i].length() === 1) count++;
-                            }
-                            return count;
-                        }
-                        
-                        var howMany = 0;
-                        var emptyStacks = howManyEmptyStacks();
-                        var maxCardsCanMove = Math.pow(2, emptyStacks);
-                        var isStackEmpty = (stack.length() === 1) ? true : false; 
-                        
-                        var divs = stack.childDivs;
-                        var top = divs[divs.length - 1];
-                        var topPip = Stack.pip(top);
-                        var draggedPip = Stack.pip(cardBeingDragged);
-                        
-                        if(cardsCanDrop.direction === "up") {
-                            if(topPip - draggedPip === 1 || isStackEmpty) {
-                                howMany = cardsCanDrop.count;
-                            }
-                        } 
-                        if(cardsCanDrop.direction === "down") {
-                            var count = (cardsCanDrop.count <= maxCardsCanMove) ? cardsCanDrop.count : maxCardsCanMove;
-                            if(isStackEmpty) {
-                                howMany = count;
+                start:  function(event, ui) { 
+                            //console.log("start dragging");
+                            draggingInProgress = true;
+                            doDrag(this); 
+                        },
+                stop:   function(e, ui) {
+                            //console.log("stop dragging");
+                            draggingInProgress = false;
+                            //var dragStackIndex = $(div).data("card-info").stackIndex;
+                            //var dragStack = stacks[dragStackIndex];
+                            //dragStack.doLayout();
+                            //dragStack.doDragAndDrop();
+                        },
+                revert: function() { 
+                            if(draggingInProgress) {
+                                draggingInProgress = false;
+                                return true;
                             } else {
-                                if(topPip - draggedPip <= count)
-                                    howMany = topPip - draggedPip;
+                                return false;
                             }
                         }
-                        return howMany;
-                    }
-
-                    if(cardBeingDragged === undefined) return;  // multiple drops
-                    var dragStackNo = cardBeingDragged.data("card-info").col;
-                    var dropStackNo = $(this).data("card-info").col;
-                    var dropStack = stacks[dropStackNo];
-                    var dragStack = stacks[dragStackNo];
-                    
-                    var cardsCanDrop = findDirection(dragStack);
-                    console.log(cardsCanDrop);
-                    cardsCanDrop.count = howManyCardsCanMove(dropStack, cardBeingDragged, cardsCanDrop);
-                    Stack.transferMultiple(dropStack, dragStack, cardsCanDrop);
-                    cardBeingDragged = undefined;  // to avoid multiple drops
-                    if(debug) Stack.doDebug();
-                }
-            });        
-    }
-
-    push() {
-        var index = cardIndex.pop();
-        var part1 = "<div><img style='width: 100%; height: auto;' src='images/cards/";
-        var part2 = cards[index%52];    // %52 because of 2 packs of cards
-        var part3 = "'/></div>";
-        var theHtml = part1 + part2 + part3;
-        var childDiv = $(theHtml).clone();
-        var selector = "div#col" + this.col;
-        $(selector).append(childDiv);
-        this.addAttributes(childDiv, index);
-        this.makeDroppable(childDiv);
-        this.makeDraggable(childDiv);
-        this.childDivs.push(childDiv);
-    }
-    
-    pushBlank() {
-        var theHtml = "<div><img style='width: 100%; height: auto;' src='images/cards/blank.svg'/></div>";
-        var childDiv = $(theHtml).clone();
-        var selector = "div#col" + this.col;
-        $(selector).append(childDiv);
-        childDiv.css("visibility", "hidden");
-        this.addAttributes(childDiv, undefined);
-        this.makeDroppable(childDiv);
-        this.makeDraggable(childDiv);
-        this.childDivs.push(childDiv);
-    }
-    
-    setupDraggableOnBottomCard() {
-        var topDiv = this.childDivs[this.childDivs.length - 1];
-        topDiv.draggable("enable");
-        
-        for(var i = 0; i < this.length() - 1; i++) {  
-            var div = this.childDivs[i];
-            div.draggable("disable");
-        }
-    }
-
-    static popDivs(stack, count) {
-        var divs = [];
-        for(var i = 0; i < count; i++) {
-            // remove div from old stack
-            var div = stack.childDivs.pop();
-            divs.push(div);
-        }
-        return divs;
-    }
-    
-    static pushDivs(stack, divs) {
-        var count = divs.length;
-        for(var i = 0; i < count; i++) {
-            // remove div from temporary array
-            var div = divs.pop();
-            stack.childDivs.push(div);
-        }
-    }
-    
-    static cloneDivs(divs) {
-        return divs.slice(0);
-    }
-    
-    static transferMultiple(dropStack, dragStack, cardsCanDrop) {
-        // disable drag on previous top of drop stack
-        var count = cardsCanDrop.count;
-        var length = dropStack.childDivs.length;
-        var top = dropStack.childDivs[length - 1];
-        top.draggable('disable');
-
-        // pop divs to be transfered and push to new stack
-        var childDivs = Stack.popDivs(dragStack, count);
-        
-        if(cardsCanDrop.direction == "up") childDivs.reverse();
-        Stack.pushDivs(dropStack, childDivs);
-        
-        // add divs to dom
-        var selector = "div#col" + dropStack.col;
-        var length = dropStack.childDivs.length;
-        for(var i = 0; i < count; i++) {
-            var div = dropStack.childDivs[length - 1 - count];
-            $(selector).append(div);
-        }
-        
-        // make top div draggable on stacks
-        if(dragStack.length() > 0) dragStack.setupDraggableOnBottomCard();
-        if(dropStack.length() > 0) dropStack.setupDraggableOnBottomCard();
-        
-        // redo layout for stack
-        dropStack.doLayout();
-    }    
-    
-    static debugIt() {
-        for(var i = 0; i < stacks.length; i++) {
-            var stack = stacks[i];
-            for(var row = 0; row < stack.length(); row++) {
-                var div = stack.childDivs[row];
-            }
-        }
-    }
-}
-
-class Reservoir {
-    
-    constructor(col) {
-        this.col = col;
-        this.width = WIDTH;
-        this.padding = PADDING;
-        this.childDivs = [];
-        var theHtml = "<div><img style='width: 100%; height: auto;' src='images/cards/blank2.svg'/></div>";
-        var childDiv = $(theHtml).clone();
-        var selector = "div#reservoir";
-        $(selector).append(childDiv);
-        this.addAttributes(childDiv);
-        this.makeDroppable(childDiv);
-        this.childDivs.push(childDiv);
-        Reservoir.position(this.childDivs[0]);
-    }
-
-    static position(div) {
-        div.css("width", "" + WIDTH + "vw")
-           .css("padding", "" + PADDING + "vw")
-    }
-    length() {
-        return this.childDivs.length;  
-    }
-    
-    addAttributes(div) {
-        div.data("reservoir-info", 
-            { 
-                col:this.col
             });
     }
+
+    doDragAndDrop() {
+        function tableDragAndDrop() {
+            // make every card droppable
+            for(var i = 0; i < stack.cards.length; i++) {
+                var card = stack.cards[i];
+                var div = DOM[card];
+                div.draggable("disable");
+                div.droppable("enable");
+            }
+            // make last card draggable
+            var top = stack.getTop();
+            var div = DOM[top];
+            div.draggable("enable");
+        }
+
+        var stack = this;
+        if(this.type === "table") tableDragAndDrop();
+//        if(this.type === "bank") bankDragAndDrop();
+//        if(this.type === "pack") packDragAndDrop();
+        
+    }
     
+    push(card) {
+        this.cards.push(card);
+        var div = DOM[card];
+        div.data("card-info", 
+        { 
+            stackIndex:this.index,
+        });
+        this.makeDraggable(div);
+        this.makeDroppable(div);
+    }
     
-    makeDroppable(div) {
-        function howManyCardsCanBeBanked(dragStack) {
-            var childDivs = dragStack.childDivs;
-            var top = childDivs[childDivs.length - 1];
-            var count = 1;
-            for(var i = childDivs.length - 2; i > 0; i--) {
-                var topPip = Stack.pip(top);
-                var next = childDivs[i];
-                var nextPip = Stack.pip(next);
-                if(nextPip - topPip !== 1) break;
-                count++;
-                top = next;
+    compute() {
+//        console.log(this.cards);
+        var up = this.howManyCardsSequence(+1);
+        var down = this.howManyCardsSequence(-1);
+        if(up > 1) 
+            this.sequence = up - 1;
+        else if(down > 1)
+            this.sequence = -(down - 1);
+        else
+            this.sequence = 0;
+    }
+    
+    howManyCardsSequence(direction) {
+        var count = 1;
+        var cards = this.cards;
+        var top = cards[cards.length - 1];
+        for(var i = cards.length - 2;  i > 0; i--) {
+            var next = cards[i];
+            var topPip = pip(top);
+            var nextPip = pip(next);
+            if((topPip - nextPip) === direction) count++; else break;                
+            top = next;
+        }
+        return count;
+    }
+    
+    getTop() {
+        return this.cards[this.cards.length - 1];
+    }
+    
+    length() {
+        return this.cards.length;        
+    }
+    
+    dropStackWillAccept(dragStack) {
+        function howManyEmptyStacks() {
+            var count = 0;
+            for(var i = 0; i < stacks.length; i++) {
+                var stack = stacks[i];
+                if(stack.type === "table" && stack.length() === 0) count++;
             }
             return count;
         }
         
-        function transfer(dragStack, dropReservoir, numberOfCards) {
-            function popFromDragStack() {
-                var divs = [];
-                for(var i = 0; i < numberOfCards; i++) {
-                    divs.push(dragStack.childDivs.pop())
-                }
-                return divs;
-            }
-            function pushToDropReservoir() {
-                for(var i = 0; i < numberOfCards; i++) {
-                    dropReservoir.childDivs.push(divs.pop())
-                }
-            }
-            function disableDragOnReservoir() {
-                var divs = dropReservoir.childDivs;
-                var top = divs[divs.length - 1];
-                top.draggable('disable');                
-            }
-            function enableDragForTopOfDragStack() {
-                var divs = dragStack.childDivs;
-                var top = divs[divs.length - 1];
-                top.draggable('enable');                                
-            }
-            function moveChildDivsInDOM() {
-                var selector = "reservoir#col" + dropReservoir.col;
-                var length = dropReservoir.childDivs.length;
-                for(var i = 0; i < numberOfCards; i++) {
-                    var div = dropReservoir.childDivs[length - 1 - numberOfCards];
-                    $(selector).append(div);
-                }
-            }
-            function doLayout() {
-                var length = dropReservoir.childDivs.length;
-                for(var i = 0; i < length; i++) {
-                    var div = dropReservoir.childDivs[i];
-                    Reservoir.position(div);
-                }                
-            }
-            console.log("xfer");
-            
-            var divs = popFromDragStack();
-            pushToDropReservoir(divs);
-            disableDragOnReservoir();
-            enableDragForTopOfDragStack();
-            moveChildDivsInDOM();
-            doLayout();
-            // (optional) update attributes
+        var howMany = 0;
+        var emptyStacks = howManyEmptyStacks();
+        var maxCardsCanMove = Math.pow(2, emptyStacks);
+        var isThisStackEmpty = (this.length() === 0) ? true : false; 
+        
+        var top = this.getTop();
+        var draggedTop = dragStack.getTop();
+        var topPip = pip(top);
+        var draggedPip = pip(draggedTop);
+        var sequence = dragStack.sequence;
+        
+        // console.log("drag sequence: " + sequence);
+        if(sequence === 0) {
+            if(topPip - draggedPip === 1 || isThisStackEmpty) howMany = 1;
         }
+        if(sequence > 0) {
+            if(topPip - draggedPip === 1 || isThisStackEmpty) {
+                var inSequence = sequence + 1;
+                howMany = inSequence;
+            }
+        } 
+        if(sequence < 0) {
+            var inSequence = -(sequence - 1);
+            var count = (inSequence <= maxCardsCanMove) ? inSequence : maxCardsCanMove;
+            if(isThisStackEmpty) {
+                howMany = count;
+            } else {
+                if(topPip - draggedPip <= count)
+                    howMany = topPip - draggedPip;
+            }
+        }
+        console.log("transfer: " + howMany);
+        return howMany;    
+    }
+    
+    transfer(dragStack, count) {
+        var dropStack = this;
+        var cards = [];
+        for(var i = 0; i < count; i++) {
+            var card = dragStack.cards.pop();
+            cards.push(card);
+        }
+        
+        if(dragStack.sequence > 0) cards.reverse();
+        
+        addToJournal(cards, dragStack, dropStack);
+        
+        for(var i = 0; i < count; i++) {
+            var card = cards.pop();
+            dropStack.cards.push(card);
+            var div = DOM[card];
+            div.data("card-info").stackIndex = dropStack.index;
+        }
+        
+        dropStack.doLayout();
+        dragStack.doLayout();
+        dropStack.doDragAndDrop();
+        dragStack.doDragAndDrop();
+    }
+}
 
-        div.droppable(
-            { 
-                drop: function (event, ui) { 
-                    if(cardBeingDragged === undefined) return;  // multiple drops
-                    console.log("dropped");
-                    var dragStackNo = cardBeingDragged.data("card-info").col;
-                    var dropReservoirNo = $(this).data("reservoir-info").col;
-                    var dragStack = stacks[dragStackNo];
-                    var dropReservoir = reservoirs[dropReservoirNo];
+var dragging = false;
+var dropping = false;
+var draggingInProgress = true;
+var dragStackIndex;
 
-                    var howMany = howManyCardsCanBeBanked(dragStack);
-                    
-                    var dragPip = Stack.pip(cardBeingDragged);
-                    var topPip;
-                    if(dropReservoir.length() === 1) {
-                        topPip = 0;
-                    } else {
-                        var top = dropReservoir.childDivs[dropReservoir.length()];
-                        topPip = Stack.pip(top);
+function addToJournal(cards, dragStack, dropStack) {
+    for(var i = 0; i < cards.length; i++) {
+        var entry = { 
+                      card: cards[i],
+                      from: dragStack.index,
+                      to:   dropStack.index
                     }
-                    if(dragPip - topPip === 1) {
-                        var numberOfCards = howMany;
-                        transfer(dragStack, dropReservoir, numberOfCards);
-                    }
-                }
-            });        
-    }    
+        journal.push(entry);
+    }
+}
+
+function pip(card) {
+    // Ace(12) -> 1
+    // Two(0) -> 2
+    // ...
+    // King(11) -> 13
+    return (card + 1) % 13 + 1;
+}
+
+function doDrag(div) {
+    //if(dragging) return;
+    console.log("doDrag");
+
+    // stop multiple drags
+//    dragging = true;
+//    dropping = false;
+    
+    var stackIndex = $(div).data("card-info").stackIndex;
+    dragStackIndex = $(div).data("card-info").stackIndex;
+}
+
+function doDrop(div) {
+    if(draggingInProgress === undefined) return;
+    draggingInProgress = undefined;
+    console.log("doDrop");
+    
+    // stop multiple drops
+//    dragging = false;
+//    dropping = true;
+    
+    var dropStackIndex = $(div).data("card-info").stackIndex;
+    var dragStack = stacks[dragStackIndex];
+    var dropStack = stacks[dropStackIndex];
+    dragStack.compute();
+    dropStack.compute();
+    var count = dropStack.dropStackWillAccept(dragStack);
+    //console.log("count: " + count);
+    dropStack.transfer(dragStack, count);
 }

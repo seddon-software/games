@@ -23,15 +23,21 @@ var debug = false;
 .ui-draggable-disabled {
     border-style: solid;
     border-color: green;
-    border-width: 3px;
-}
-
-.ui-droppable {
-    border-style: solid;
-    border-color: red;
     border-width: 0px;
 }
+/*
+.ui-droppable {
+    border-style: solid;
+    border-color: blue;
+    border-width: 5px;
+}
 
+.ui-draggable {
+    border-style: solid;
+    border-color: red;
+    border-width: 5px;
+}
+*/
 body {
     overflow: hidden;
     /* disable pull to refresh */
@@ -42,30 +48,14 @@ div.ui-page.ui-page-theme-a.ui-page-active {
     padding-left: 2vw;
 }
 
-div#reservoir div {
+div#cards {
     position: relative;
-    width: 6vw;
-    padding-left: 1vw;
-    float: left;
 }
-div#table div {
-    position: absolute;
-    width: 6vw;
-    padding-left: 0vw;
-    clear: both;
-}
-div#x {
-    position: relative;
-    clear: both;
-}
+
 
 </style>
 <script>
 
-var STACKS = 10;
-var WIDTH = 8;
-var PADDING = 0.25;
-var android = navigator.appVersion.indexOf("Android") !== -1;
 var cards = [
     "2_of_clubs.svg",
     "3_of_clubs.svg",
@@ -149,42 +139,6 @@ var cards = [
         return clock;
     }
     
-    function setupReservoir() {
-        for(var col = 0; col < 8; col++) {
-            theReservoir = new Reservoir(col);
-            reservoirs.push(theReservoir);         
-        }
-    }
-    
-    function setupPack() {
-        var theHtml = "<div><img style='width: 100%; height: auto;' src='images/cards/blank2.svg'/></div>";
-        var childDiv = $(theHtml).clone();
-        var selector = "div#pack";
-        $(selector).append(childDiv);
-        childDiv.draggable();
-        childDiv.css("float", "left")
-                .css("width", "" + width + "vw")
-                .css("padding", "" + padding + "vw")
-                .css("padding-left", "" + (width + 3*padding) + "vw");
-    }
-    
-    function setupTable(numberOfCardsToDeal) {
-        for(var col = 0; col < STACKS; col++) {
-            theStack = new Stack(col);
-            stacks.push(theStack);
-        }
-        var col = 0;
-        for(var i = 0; i < numberOfCardsToDeal; i++) {
-            stacks[col].push();
-            col++;
-            if(col === stacks.length) col = 0;
-        }
-        for(var col = 0; col < 10; col++) {
-            stacks[col].doLayout();
-            stacks[col].setupDraggableOnBottomCard();
-        }
-    }
-    
     function addCopyright() {
         $("#copyright").css("color", "black")
                        .css("bottom", "0px")
@@ -212,56 +166,119 @@ var cards = [
         shuffle(cardIndex);
         return cardIndex;  
     }
-
+    
+    function setupPack(numberOfCardsToDeal) {
+        var pack = Stack.find("pack", 0);
+//        console.log(pack.id + ":" + pack.type);
+        for(var i = 0; i < numberOfCardsToDeal; i++) {
+            pack.cards.push(cardIndex.pop());
+        }
+    }
+    
+    function setupTable(numberOfCardsToDeal) {
+        var index = 0;
+        var firstStack = Stack.find("table", 0);
+        var firstStackIndex = firstStack.index;
+        var lastStackIndex = firstStackIndex + TABLE_STACKS; 
+        for(var i = 0; i < numberOfCardsToDeal; i++) {
+            stacks[index].push(cardIndex.pop());
+            index++;
+            if(index === lastStackIndex) index = firstStackIndex;
+        }
+    }
+    
+    function createStacks(type) {
+        var stop;
+		if(type === "bank") stop = BANK_STACKS;
+		if(type === "table") stop = TABLE_STACKS;
+		if(type === "pack") stop = PACK_STACKS;
+ 
+        for(var id = 0; id < stop; id++) {
+            var index = stacks.length;
+            var stack = new Stack(id, index, type);
+            stacks.push(stack);
+        }
+    }
+        
+    function setupDOM() {
+        // add 2 packs to DOM
+        for(var i = 0; i < 2 * cards.length; i++) {
+            var part1 = "<div><img style='width: 100%; height: auto;' src='images/cards/";
+            var part2 = cards[i%52];    // %52 because of 2 packs of cards
+            var part3 = "'/></div>";
+            var theHtml = part1 + part2 + part3;
+            var div = $(theHtml);
+            $("#cards").append(div);
+            DOM.push(div);
+        }
+    }
+    
+    function doLayouts() {
+        for(var i = 0; i < stacks.length; i++) {
+            var stack = stacks[i];
+//            console.log(stack.type);
+            stack.doLayout();
+        }    
+    }
+    
+    function setupDragAndDrop() {
+        for(var i = 0; i < stacks.length; i++) {
+            var stack = stacks[i];
+            stack.doDragAndDrop();
+        }    
+    }
+    
+    function setupUndo() {
+        $("#undo").click(function() {
+            if(journal.length === 0) return;
+            var entry = journal.pop();
+//            console.log(entry);
+            var fromStack = stacks[entry.from];
+            var toStack = stacks[entry.to]
+            // reverse the transfer
+            fromStack.transfer(toStack, 1);
+            journal.pop();  // don'y journal the undo
+        });
+    }
+    
+    var TABLE_STACKS = 10;
+    var BANK_STACKS = 8;
+    var PACK_STACKS = 1;
+    var TABLE_STACKS_START = 0;
+    var BANK_STACKS_START = TABLE_STACKS;
+    var PACK_STACKS_START = TABLE_STACKS + BANK_STACKS;
+    var WIDTH = 7;
+    var PADDING = 0.5;
+    var TOP_SEPARATION = 2;
+    var LEFT_SEPARATION = 8;
+    var TOP_OFFSET = 8;
     var cardIndex;
     var cardBeingDragged;
+    var android = navigator.appVersion.indexOf("Android") !== -1;
     var stacks = [];
-    var reservoirs = [];
+    var journal = [];
+    var DOM = [];
     
     $(document).ready(function() {
         cardIndex = shuffleDoublePack();
-
-        cardIndex[84] = 5;
-        cardIndex[85] = 81;
-        cardIndex[86] = 71;
-        cardIndex[87] = 61;
-
-        cardIndex[88] = 7;
-        cardIndex[89] = 71;
-        cardIndex[90] = 78;
-        cardIndex[91] = 58;
-
-        cardIndex[92] = 82;
-        cardIndex[93] = 81;
-        cardIndex[94] = 71;
-        cardIndex[95] = 61;
-
-        cardIndex[96] = 29;
-        cardIndex[97] = 28;
-        cardIndex[98] = 27;
-        cardIndex[99] = 26;
-
-        cardIndex[100] = 6;
-        cardIndex[101] = 5;
-        cardIndex[102] = 3;
-        cardIndex[103] = 4;
+        createStacks("table");
+        createStacks("bank");
+        createStacks("pack");
         
-//        cardIndex = shuffleDoublePack();
-        setupReservoir();
-//        setupPack(60);
+        setupDOM();
         setupTable(44);
+        setupPack(60);
+        doLayouts();
+        setupDragAndDrop();
         addCopyright();
-        Stack.debugIt();
+        setupUndo();
     });
 </script>
 </head>
 <body>
     <h1>SPIDER</h1>
-    <div id='reservoir'></div>
-    <div id='pack'></div>
-    <div id='x'>
-        <div id='table'></div>
-    </div>
+    <div id='cards'></div>
+    <button id='undo' type="button">Undo</button>
     <div id="copyright">© Chris Seddon, 25 January 2018</div>
 </body>
 </html>
