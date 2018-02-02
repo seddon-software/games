@@ -5,6 +5,11 @@ class Stack {
         this.type = type;
         this.index = index;
         this.cards = [];
+        this.base = blanks[index];
+        this.base.data("card-info", 
+        { 
+            stackIndex: this.index,
+        });
     }
 
     static find(searchType, searchId) {
@@ -14,9 +19,43 @@ class Stack {
             var id = stacks[i].id;
             if(searchType === type && searchId === id) {
                 result = stacks[i];
+                break;
             } 
         }
         return result;
+    }
+    
+    doActivateBase() {
+        function tableBase() {
+            div.css("position", "absolute")
+               .css("width", WIDTH + "vw")
+               .css("left", "" + (stack.index * LEFT_SEPARATION) + "vw")
+               .css("top", "" + (TOP_SEPARATION * 0 + TOP_OFFSET) + "vw")
+               .css("z-index", "" + -1);
+        }
+        
+        function bankBase() {
+            div.css("position", "absolute")
+               .css("width", WIDTH + "vw")
+               .css("left", "" + (stack.id * LEFT_SEPARATION) + "vw")
+               .css("top", "" + (1) + "vw")
+               .css("z-index", "" + 0);
+        }
+        
+        function packBase() {
+            div.css("position", "absolute")
+               .css("width", WIDTH + "vw")
+               .css("left", "" + (9 * LEFT_SEPARATION) + "vw")
+               .css("top", "" + (1) + "vw")
+               .css("z-index", "" + 0);
+        }
+        
+        var stack = this;
+        var div = this.base;
+        if(this.type === "table") tableBase();
+        if(this.type === "bank") bankBase();
+        if(this.type === "pack") packBase();        
+        this.makeDroppable(div);
     }
     
     doLayout() {
@@ -30,6 +69,15 @@ class Stack {
                    .css("top", "" + (TOP_SEPARATION * i + TOP_OFFSET) + "vw")
                    .css("z-index", "" + i);
             }
+            // journal flip of top card
+            if(!stack.isStackEmpty()) {
+                var top = stack.getTop();
+                var div = DOM[top];
+                if(div.data("card-info").isFaceDown === true) {
+                    journal.push({ type:"flip", flip:top });
+                    flip(top);
+                }
+            }
         }
         
         function bankLayout() {
@@ -37,12 +85,10 @@ class Stack {
                 var card = stack.cards[i];
                 var div = DOM[card];
                 div.css("position", "absolute")
-                   .css("class", "yyyyyyyy")
                    .css("width", WIDTH + "vw")
-                   .css("left", "" + i*2 + "vw")
+                   .css("left", "" + i*20 + "vw")
                    .css("top", "" + (i*2 + 10) + "vw")
-                   .css("visibilty", "hidden")
-                   .css("z-index", "" + i);
+                   .css("z-index", "" + 1000);
             }            
         }
         
@@ -52,10 +98,18 @@ class Stack {
                 var div = DOM[card];
                 div.css("position", "absolute")
                    .css("width", WIDTH + "vw")
-                   .css("left", "" + 90 + "vw")
-                   .css("top", "" + 4 + "vw")
+                   .css("left", "" + (9 * LEFT_SEPARATION) + "vw")
+                   .css("top", "" + (1) + "vw")
                    .css("z-index", "" + i);
-            }                        
+                div.data("card-info").isFaceDown = true;
+                flip(card);
+            }
+            if(!stack.isStackEmpty()) {
+                var top = stack.getTop();
+                var div = DOM[top];
+                if(div.data("card-info").isFaceDown === false) flip(top);
+
+            }
         }
         var stack = this;
         if(this.type === "table") tableLayout();
@@ -110,9 +164,11 @@ class Stack {
                 div.droppable("enable");
             }
             // make last card draggable
-            var top = stack.getTop();
-            var div = DOM[top];
-            div.draggable("enable");
+            if(!stack.isStackEmpty()) {
+                var top = stack.getTop();
+                var div = DOM[top];
+                div.draggable("enable");
+            }
         }
 
         var stack = this;
@@ -121,14 +177,16 @@ class Stack {
 //        if(this.type === "pack") packDragAndDrop();
         
     }
-    
-    push(card) {
+
+    push(card, isFaceDown) {
         this.cards.push(card);
         var div = DOM[card];
         div.data("card-info", 
         { 
-            stackIndex:this.index,
+            stackIndex: this.index,
+            isFaceDown: isFaceDown
         });
+        if(isFaceDown) flip(card);
         this.makeDraggable(div);
         this.makeDroppable(div);
     }
@@ -151,6 +209,7 @@ class Stack {
         var top = cards[cards.length - 1];
         for(var i = cards.length - 2;  i > 0; i--) {
             var next = cards[i];
+            if(cardIsFaceDown(next)) break;
             var topPip = pip(top);
             var nextPip = pip(next);
             if((topPip - nextPip) === direction) count++; else break;                
@@ -166,6 +225,11 @@ class Stack {
     length() {
         return this.cards.length;        
     }
+
+    isStackEmpty() {
+        var isStackEmpty = (this.length() === 0) ? true : false;         
+        return isStackEmpty;
+    }
     
     dropStackWillAccept(dragStack) {
         function howManyEmptyStacks() {
@@ -180,7 +244,7 @@ class Stack {
         var howMany = 0;
         var emptyStacks = howManyEmptyStacks();
         var maxCardsCanMove = Math.pow(2, emptyStacks);
-        var isThisStackEmpty = (this.length() === 0) ? true : false; 
+        var isThisStackEmpty = this.isStackEmpty();
         
         var top = this.getTop();
         var draggedTop = dragStack.getTop();
@@ -236,16 +300,36 @@ class Stack {
         dropStack.doDragAndDrop();
         dragStack.doDragAndDrop();
     }
+    
+    addClickHandler() {
+        if(this.type === "pack") {
+            var packStack = this;
+            for(var i = 0; i < this.cards.length; i++) {
+                var card = this.cards[i];
+                var div = DOM[card];
+                div.click(packStack, function() {
+                        var firstTableStack = Stack.find("table", 0);
+                        var firstTableIndex = firstTableStack.index;
+                        
+                        for(var i = 0; i < TABLE_STACKS; i++) {
+                            var targetStack = stacks[firstTableIndex + i];
+                            targetStack.transfer(packStack, 1);
+                        }
+                        journal.push( { type:"deal", cards:TABLE_STACKS } );
+                    }
+                );
+            }
+        }
+    }
 }
 
-var dragging = false;
-var dropping = false;
-var draggingInProgress = true;
-var dragStackIndex;
+// end of class
+// global functions follow
 
 function addToJournal(cards, dragStack, dropStack) {
     for(var i = 0; i < cards.length; i++) {
         var entry = { 
+                      type: "table", 
                       card: cards[i],
                       from: dragStack.index,
                       to:   dropStack.index
@@ -262,14 +346,13 @@ function pip(card) {
     return (card + 1) % 13 + 1;
 }
 
-function doDrag(div) {
-    //if(dragging) return;
-    console.log("doDrag");
+function cardIsFaceDown(card) {
+    var div = DOM[card];
+    return div.data("card-info").isFaceDown;
+}
 
-    // stop multiple drags
-//    dragging = true;
-//    dropping = false;
-    
+function doDrag(div) {
+    console.log("doDrag");    
     var stackIndex = $(div).data("card-info").stackIndex;
     dragStackIndex = $(div).data("card-info").stackIndex;
 }
@@ -278,10 +361,6 @@ function doDrop(div) {
     if(draggingInProgress === undefined) return;
     draggingInProgress = undefined;
     console.log("doDrop");
-    
-    // stop multiple drops
-//    dragging = false;
-//    dropping = true;
     
     var dropStackIndex = $(div).data("card-info").stackIndex;
     var dragStack = stacks[dragStackIndex];
