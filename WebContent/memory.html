@@ -279,8 +279,8 @@ var cards = [
                         secondCard = undefined;
                         // found a pair, so hide cards
                         setTimeout(function() {                    
-                            $(pair1).children().attr("src", "images/cards/blank.svg");             
-                            $(pair2).children().attr("src", "images/cards/blank.svg");             
+                            $(pair1).children().attr("src", "images/cards/back1.svg");             
+                            $(pair2).children().attr("src", "images/cards/back1.svg");             
                             matches += 2;
                             if(matches === cards.length) endGame();
                             if(debug) endGame();

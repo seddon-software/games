@@ -2,8 +2,10 @@
 <!-- © Chris Seddon, 25 January 2018 -->
 <!-- 
 
-can't drag to empty stack
-
+1. can drag to empty stack, but then can only move one card from the stack
+2. after a deal the 10 dealt cards still have the click handler active
+3. stacks can build up so that cards are evenually off screen, need to adjust height
+ 
  -->
 <html>
 <head>
@@ -25,6 +27,7 @@ var debug = false;
 </script>
 <style type="text/css">
 
+/*
 .ui-draggable-disabled {
     border-style: solid;
     border-color: green;
@@ -35,7 +38,6 @@ img {
     border-color: black;
     border-width: 0px;  
 }
-/*
 .ui-droppable {
     border-style: solid;
     border-color: blue;
@@ -47,6 +49,10 @@ img {
     border-color: red;
     border-width: 5px;
 }
+div.ui-page.ui-page-theme-a.ui-page-active {
+    padding-left: 2vw;
+}
+
 */
 body {
     overflow: hidden;
@@ -54,10 +60,6 @@ body {
     overflow-y: hidden;
     overscroll-behavior-y: contain;
 }
-div.ui-page.ui-page-theme-a.ui-page-active {
-    padding-left: 2vw;
-}
-
 div#cards {
     position: relative;
 }
@@ -231,7 +233,7 @@ var cards = [
         var image = $(div).find("img");
         var cardSrc = $(image).attr("src");
 
-        var blank = "images/cards/blank.svg";
+        var blank = "images/cards/back1.svg";
         var card = "images/cards/" + cards[n%52];
         if(cardSrc === blank) {
             $(image).attr("src", card);
@@ -328,7 +330,7 @@ var cards = [
     var BANK_STACKS_START = TABLE_STACKS;
     var PACK_STACKS_START = TABLE_STACKS + BANK_STACKS;
     var WIDTH = 7;
-    var PADDING = 0.5;
+    var PADDING = 0;
     var TOP_SEPARATION = 2;
     var LEFT_SEPARATION = 8;
     var TOP_OFFSET = 12;

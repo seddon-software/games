@@ -161,13 +161,14 @@ class Stack {
                 var card = stack.cards[i];
                 var div = DOM[card];
                 div.draggable("disable");
-                div.droppable("enable");
+                div.droppable("disable");
             }
             // make last card draggable
             if(!stack.isStackEmpty()) {
                 var top = stack.getTop();
                 var div = DOM[top];
                 div.draggable("enable");
+                div.droppable("enable");
             }
         }
 
@@ -311,9 +312,14 @@ class Stack {
                         var firstTableStack = Stack.find("table", 0);
                         var firstTableIndex = firstTableStack.index;
                         
+                        // move a card to each table stack
                         for(var i = 0; i < TABLE_STACKS; i++) {
                             var targetStack = stacks[firstTableIndex + i];
                             targetStack.transfer(packStack, 1);
+                            // disable click handler
+                            var top = targetStack.getTop();
+                            var div = DOM[top];
+                            div.off("click");
                         }
                         journal.push( { type:"deal", cards:TABLE_STACKS } );
                     }
