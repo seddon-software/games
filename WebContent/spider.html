@@ -292,9 +292,10 @@ var cards = [
         function doTable(entry) {
             var fromStack = stacks[entry.from];
             var toStack = stacks[entry.to]
+            var count = entry.cards.length;
             // reverse the transfer
-            fromStack.transfer(toStack, 1);
-            journal.pop();  // don't journal the undo            
+            var undo = true;
+            fromStack.transfer(toStack, count, undo);
         }
         function doDeal(entry) {
             var cards = entry.cards;
@@ -311,7 +312,7 @@ var cards = [
         function doFlip(entry) {
             flip(entry.flip);
             entry = journal.pop();
-            doTable(entry);            
+            if(entry.type === "table") doTable(entry);            
         }
         $("#undo").click(function() {
             if(journal.length === 0) return;  // journal empty

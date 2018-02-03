@@ -208,7 +208,7 @@ class Stack {
         var count = 1;
         var cards = this.cards;
         var top = cards[cards.length - 1];
-        for(var i = cards.length - 2;  i > 0; i--) {
+        for(var i = cards.length - 2;  i >= 0; i--) {
             var next = cards[i];
             if(cardIsFaceDown(next)) break;
             var topPip = pip(top);
@@ -233,17 +233,19 @@ class Stack {
     }
     
     dropStackWillAccept(dragStack) {
-        function howManyEmptyStacks() {
+        function howManyEmptyStacksApartFromUs() {
             var count = 0;
             for(var i = 0; i < stacks.length; i++) {
                 var stack = stacks[i];
                 if(stack.type === "table" && stack.length() === 0) count++;
             }
+            // don't count ourselves
+            if(dropStack.length() === 0) count--;
             return count;
         }
-        
+        var dropStack = this;
         var howMany = 0;
-        var emptyStacks = howManyEmptyStacks();
+        var emptyStacks = howManyEmptyStacksApartFromUs();
         var maxCardsCanMove = Math.pow(2, emptyStacks);
         var isThisStackEmpty = this.isStackEmpty();
         
@@ -277,17 +279,16 @@ class Stack {
         return howMany;    
     }
     
-    transfer(dragStack, count) {
+    transfer(dragStack, count, undo) {
         var dropStack = this;
         var cards = [];
         for(var i = 0; i < count; i++) {
             var card = dragStack.cards.pop();
             cards.push(card);
         }
-        
         if(dragStack.sequence > 0) cards.reverse();
-        
-        addToJournal(cards, dragStack, dropStack);
+        // pass a copy of cards to journal
+        addToJournal(cards.slice(0), dragStack, dropStack, undo);
         
         for(var i = 0; i < count; i++) {
             var card = cards.pop();
@@ -315,7 +316,8 @@ class Stack {
                         // move a card to each table stack
                         for(var i = 0; i < TABLE_STACKS; i++) {
                             var targetStack = stacks[firstTableIndex + i];
-                            targetStack.transfer(packStack, 1);
+                            var undo = false;
+                            targetStack.transfer(packStack, 1, undo);
                             // disable click handler
                             var top = targetStack.getTop();
                             var div = DOM[top];
@@ -332,16 +334,15 @@ class Stack {
 // end of class
 // global functions follow
 
-function addToJournal(cards, dragStack, dropStack) {
-    for(var i = 0; i < cards.length; i++) {
-        var entry = { 
-                      type: "table", 
-                      card: cards[i],
-                      from: dragStack.index,
-                      to:   dropStack.index
-                    }
-        journal.push(entry);
-    }
+function addToJournal(cards, dragStack, dropStack, undo) {
+    var entry = { 
+                  type: "table", 
+                  cards: cards,
+                  from: dragStack.index,
+                  to:   dropStack.index
+                };
+    if(!undo) journal.push(entry);
+
 }
 
 function pip(card) {
@@ -375,5 +376,6 @@ function doDrop(div) {
     dropStack.compute();
     var count = dropStack.dropStackWillAccept(dragStack);
     //console.log("count: " + count);
-    dropStack.transfer(dragStack, count);
+    var undo = false;
+    dropStack.transfer(dragStack, count, undo);
 }
