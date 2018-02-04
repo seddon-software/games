@@ -2,8 +2,6 @@
 <!-- © Chris Seddon, 25 January 2018 -->
 <!-- 
 
-1. can drag to empty stack, but then can only move one card from the stack
-2. after a deal the 10 dealt cards still have the click handler active
 3. stacks can build up so that cards are evenually off screen, need to adjust height
  
  -->
@@ -63,7 +61,13 @@ body {
 div#cards {
     position: relative;
 }
-
+.centered {
+    z-index: 1000;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
 </style>
 <script>
 
@@ -343,6 +347,7 @@ var cards = [
     var DOM = [];
     var blanks = [];
     var draggingInProgress = true;
+    var packCounter;
     
     $(document).ready(function() {
         addBlanksToDOM();

@@ -104,12 +104,32 @@ class Stack {
                 div.data("card-info").isFaceDown = true;
                 flip(card);
             }
+            // make sure top card of pack is face down
             if(!stack.isStackEmpty()) {
                 var top = stack.getTop();
                 var div = DOM[top];
-                if(div.data("card-info").isFaceDown === false) flip(top);
-
+                if(div.data("card-info").isFaceDown === false) flip(top);       
             }
+            // and clickable if undo puts card back on pack
+            stack.removeClickHandler();
+            stack.addClickHandler();
+            
+            // position pack counter
+            if(packCounter === undefined) { // packCounter is a global variable
+                packCounter = true;  // ensure this code is only executed once
+                console.log(stack.length());
+                var html = "<div id='packCounter'>" + stack.length() + "</div>";        
+                div = $(html);
+                $("#cards").append(div);
+                $(div).css("position", "absolute")
+                      .css("width", WIDTH + "vw")
+                      .css("left", "" + (9 * LEFT_SEPARATION) + "vw")
+                      .css("top", "" + (1) + "vw")
+                      .css("opacity", "0.5")
+                      .css("z-index", "" + 1000);                
+            } else {
+                $("#packCounter").text("" + stack.length());
+            }            
         }
         var stack = this;
         if(this.type === "table") tableLayout();
@@ -207,11 +227,11 @@ class Stack {
         // how many in pip and suit sequence
         var count = 1;
         var cards = this.cards;
-        var top = cards[cards.length - 1] % 52;
+        var top = cards[cards.length - 1];
         for(var i = cards.length - 2;  i >= 0; i--) {
-            var next = cards[i] % 52;
+            var next = cards[i];
             if(cardIsFaceDown(next)) break;
-            if(next - top === 1) count++; else break;
+            if((next%52 - top%52) === 1) count++; else break;
             top = next;
         }
         this.suitSequence = count;
@@ -324,10 +344,14 @@ class Stack {
             var card = dragStack.cards.pop();
             cards.push(card);
         }
+        // note that stacks are reversed during an undo
+        if(undo && dragStack.type === "bank") cards.reverse();
+        if(!undo && dropStack.type === "bank") cards.reverse();
         if(dragStack.sequence > 0) cards.reverse();
+        
         // pass a copy of cards to journal
         addToJournal(cards.slice(0), dragStack, dropStack, undo);
-        
+
         for(var i = 0; i < count; i++) {
             var card = cards.pop();
             dropStack.cards.push(card);
@@ -339,6 +363,17 @@ class Stack {
         dragStack.doLayout();
         dropStack.doDragAndDrop();
         dragStack.doDragAndDrop();
+    }
+    
+    removeClickHandler() {
+        if(this.type === "pack") {
+            var packStack = this;
+            for(var i = 0; i < this.cards.length; i++) {
+                var card = this.cards[i];
+                var div = DOM[card];
+                div.off("click");
+            }
+        }        
     }
     
     addClickHandler() {
@@ -356,7 +391,8 @@ class Stack {
                             var targetStack = stacks[firstTableIndex + i];
                             var undo = false;
                             targetStack.transfer(packStack, 1, undo);
-                            // disable click handler
+                            
+                            // disable click handler for dealt cards
                             var top = targetStack.getTop();
                             var div = DOM[top];
                             div.off("click");
@@ -411,11 +447,11 @@ function doDrop(div) {
     var dragStack = stacks[dragStackIndex];
     var dropStack = stacks[dropStackIndex];
     dragStack.compute();
-//    dropStack.compute();
+
     var count;
     if(dropStack.type === "table") {
         count = dropStack.dropStackWillAccept(dragStack);
-    } else {
+    } else {  // bank
         bankStack = dropStack;
         count = bankStack.bankStackWillAccept(dragStack);
     }
@@ -423,3 +459,13 @@ function doDrop(div) {
     var undo = false;
     dropStack.transfer(dragStack, count, undo);
 }
+
+function dump(n) {
+    var stack = stacks[n];
+    var s = "";
+    for(var i = 0; i < stack.length(); i++) {
+        s = s + "" + stack.cards[i]%52 + ",";
+    }
+    console.log(stack.type + ":" + stack.id + "   " + s)
+}
+var d = dump;
