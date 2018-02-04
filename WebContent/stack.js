@@ -31,7 +31,7 @@ class Stack {
                .css("width", WIDTH + "vw")
                .css("left", "" + (stack.index * LEFT_SEPARATION) + "vw")
                .css("top", "" + (TOP_SEPARATION * 0 + TOP_OFFSET) + "vw")
-               .css("z-index", "" + -1);
+               .css("z-index", "" + 0);
         }
         
         function bankBase() {

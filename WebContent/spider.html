@@ -20,9 +20,6 @@
 <script src="jquery.ui.touch-punch.min.js"></script>
 <script src="stack.js"></script>
 
-<script>
-var debug = false;
-</script>
 <style type="text/css">
 
 /*
@@ -30,11 +27,6 @@ var debug = false;
     border-style: solid;
     border-color: green;
     border-width: 0px;
-}
-img {
-    border-style: solid;
-    border-color: black;
-    border-width: 0px;  
 }
 .ui-droppable {
     border-style: solid;
@@ -47,11 +39,11 @@ img {
     border-color: red;
     border-width: 5px;
 }
+*/
 div.ui-page.ui-page-theme-a.ui-page-active {
     padding-left: 2vw;
 }
 
-*/
 body {
     overflow: hidden;
     /* disable pull to refresh */
@@ -60,13 +52,6 @@ body {
 }
 div#cards {
     position: relative;
-}
-.centered {
-    z-index: 1000;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
 }
 </style>
 <script>
@@ -163,9 +148,14 @@ var cards = [
 
     function positionUndoButton() {
         $("#undo").css("color", "black")
-                       .css("bottom", "10vh")
-                       .css("position", "fixed")
-                       .css("width", "15vw");
+                  .css("bottom", "10vh")
+                  .css("position", "fixed")
+                  .css("width", "15vw");
+        $("#undo10").css("color", "black")
+                  .css("left", "25vw")
+                  .css("bottom", "10vh")
+                  .css("position", "fixed")
+                  .css("width", "15vw");
     }
 
     function shuffleDoublePack() {
@@ -199,7 +189,6 @@ var cards = [
     function setupPack(numberOfCardsToDeal) {
         var pack = Stack.find("pack", 0);
         for(var i = 0; i < numberOfCardsToDeal; i++) {
-//            pack.cards.push(cardIndex.pop());
             pack.push(cardIndex.pop());
         }
         pack.addClickHandler();
@@ -318,13 +307,17 @@ var cards = [
             entry = journal.pop();
             if(entry.type === "table") doTable(entry);            
         }
-        $("#undo").click(function() {
+        function undo() {
             if(journal.length === 0) return;  // journal empty
 
             var entry = journal.pop();
             if(entry.type === "flip") doFlip(entry);
             if(entry.type === "deal") doDeal(entry);
             if(entry.type === "table") doTable(entry);
+        }
+        $("#undo").click(undo);
+        $("#undo10").click(function() {
+            for(var i = 0; i < 10; i++) undo(); 
         });
     }
 
@@ -373,6 +366,7 @@ var cards = [
 <body>
     <div id='cards'></div>
     <button id='undo' type="button">Undo</button>
+    <button id='undo10' type="button">Undo 10</button>
     <div id="copyright">SPIDER © Chris Seddon, 25 January 2018</div>
 </body>
 </html>
