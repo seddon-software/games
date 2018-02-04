@@ -86,9 +86,9 @@ class Stack {
                 var div = DOM[card];
                 div.css("position", "absolute")
                    .css("width", WIDTH + "vw")
-                   .css("left", "" + i*20 + "vw")
-                   .css("top", "" + (i*2 + 10) + "vw")
-                   .css("z-index", "" + 1000);
+                   .css("left", "" + (stack.id * LEFT_SEPARATION) + "vw")
+                   .css("top", "" + (1) + "vw")
+                   .css("z-index", "" + card % 52);
             }            
         }
         
@@ -194,6 +194,7 @@ class Stack {
     
     compute() {
 //        console.log(this.cards);
+        // how cards are in pip sequence
         var up = this.howManyCardsSequence(+1);
         var down = this.howManyCardsSequence(-1);
         if(up > 1) 
@@ -202,6 +203,18 @@ class Stack {
             this.sequence = -(down - 1);
         else
             this.sequence = 0;
+        
+        // how many in pip and suit sequence
+        var count = 1;
+        var cards = this.cards;
+        var top = cards[cards.length - 1] % 52;
+        for(var i = cards.length - 2;  i >= 0; i--) {
+            var next = cards[i] % 52;
+            if(cardIsFaceDown(next)) break;
+            if(next - top === 1) count++; else break;
+            top = next;
+        }
+        this.suitSequence = count;
     }
     
     howManyCardsSequence(direction) {
@@ -232,6 +245,29 @@ class Stack {
         return isStackEmpty;
     }
     
+    bankStackWillAccept(dragStack) {
+        var bankStack = this;
+        var howMany;
+        
+        if(bankStack.isStackEmpty()) {
+            var draggedTop = dragStack.getTop();
+            var draggedPip = pip(draggedTop);
+            if(draggedPip === 1) {
+               howMany = dragStack.suitSequence;
+            } else {
+               howMany = 0;
+            }
+        } else {
+            var bankTop = bankStack.getTop() % 52;
+            var draggedTop = dragStack.getTop() % 52;
+            if(draggedTop - bankTop === 1)
+                howMany = dragStack.suitSequence;
+            else
+                howMany = 0;            
+        }
+        return howMany;
+    }
+    
     dropStackWillAccept(dragStack) {
         function howManyEmptyStacksApartFromUs() {
             var count = 0;
@@ -239,17 +275,19 @@ class Stack {
                 var stack = stacks[i];
                 if(stack.type === "table" && stack.length() === 0) count++;
             }
-            // don't count ourselves
-            if(dropStack.length() === 0) count--;
+            // don't count ourselves if we are a table stack
+            if(dragStack.type === "table" && dragStack.length() === 0) count--;
             return count;
         }
+
         var dropStack = this;
-        var howMany = 0;
         var emptyStacks = howManyEmptyStacksApartFromUs();
         var maxCardsCanMove = Math.pow(2, emptyStacks);
-        var isThisStackEmpty = this.isStackEmpty();
         
-        var top = this.getTop();
+        // drop stack might be empty, but then topPip will be undefined, which is OK
+        var howMany = 0;
+        var isThisStackEmpty = dropStack.isStackEmpty();
+        var top = dropStack.getTop();
         var draggedTop = dragStack.getTop();
         var topPip = pip(top);
         var draggedPip = pip(draggedTop);
@@ -346,11 +384,11 @@ function addToJournal(cards, dragStack, dropStack, undo) {
 }
 
 function pip(card) {
-    // Ace(12) -> 1
-    // Two(0) -> 2
+    // Ace(0, 13, 26, ...) -> 1
+    // Two(1, 14, 27, ...) -> 2
     // ...
-    // King(11) -> 13
-    return (card + 1) % 13 + 1;
+    // King(12, 25, 38, ...) -> 13
+    return card % 13 + 1;
 }
 
 function cardIsFaceDown(card) {
@@ -373,8 +411,14 @@ function doDrop(div) {
     var dragStack = stacks[dragStackIndex];
     var dropStack = stacks[dropStackIndex];
     dragStack.compute();
-    dropStack.compute();
-    var count = dropStack.dropStackWillAccept(dragStack);
+//    dropStack.compute();
+    var count;
+    if(dropStack.type === "table") {
+        count = dropStack.dropStackWillAccept(dragStack);
+    } else {
+        bankStack = dropStack;
+        count = bankStack.bankStackWillAccept(dragStack);
+    }
     //console.log("count: " + count);
     var undo = false;
     dropStack.transfer(dragStack, count, undo);
