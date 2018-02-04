@@ -175,16 +175,16 @@ class Stack {
     }
 
     doDragAndDrop() {
-        function tableDragAndDrop() {
-            // make every card droppable
+        function enableOrDisableDragAndDrop() {
+            // disable drag and drop on all but last card
             for(var i = 0; i < stack.cards.length; i++) {
                 var card = stack.cards[i];
                 var div = DOM[card];
                 div.draggable("disable");
                 div.droppable("disable");
             }
-            // make last card draggable
-            if(!stack.isStackEmpty()) {
+            // make last card drag and droppable
+            if(!stack.isStackEmpty() && stack.type === "table") {
                 var top = stack.getTop();
                 var div = DOM[top];
                 div.draggable("enable");
@@ -193,9 +193,8 @@ class Stack {
         }
 
         var stack = this;
-        if(this.type === "table") tableDragAndDrop();
-//        if(this.type === "bank") bankDragAndDrop();
-//        if(this.type === "pack") packDragAndDrop();
+        if(this.type === "table") enableOrDisableDragAndDrop();
+        if(this.type === "pack") enableOrDisableDragAndDrop();
         
     }
 
