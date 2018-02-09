@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<!-- © Chris Seddon, 25 January 2018 -->
+<!-- 
+
+3. stacks can build up so that cards are evenually off screen, need to adjust height
+ 
+ -->
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name='viewport' 
+     content='width=device-width, height=device-height, user-scalable=no,
+              initial-scale=1.0, maximum-scale=1.0, user-scalable=0' />
+<link rel="stylesheet" href="jquery.mobile-1.4.5.css">
+<link rel="stylesheet" href="jquery-ui-1.12.1.css">
+<script type="text/javascript" src="jquery-3.2.1.js"></script>
+<script type="text/javascript" src="jquery-ui-1.12.1.js"></script>
+<script src="jquery.mobile.custom.js"></script>
+<script src="jquery_cookie.js"></script>
+<script src="jquery.ui.touch-punch.min.js"></script>
+<script src="stack.js"></script>
+
+<style type="text/css">
+
+/*
+.ui-draggable-disabled {
+    border-style: solid;
+    border-color: green;
+    border-width: 0px;
+}
+.ui-droppable {
+    border-style: solid;
+    border-color: blue;
+    border-width: 5px;
+}
+
+.ui-draggable {
+    border-style: solid;
+    border-color: red;
+    border-width: 5px;
+}
+*/
+div.ui-page.ui-page-theme-a.ui-page-active {
+    padding-left: 2vw;
+}
+
+body {
+    overflow: hidden;
+    /* disable pull to refresh */
+    overflow-y: hidden;
+    overscroll-behavior-y: contain;
+}
+div#cards {
+    position: relative;
+}
+</style>
+<script>
+
+var cards = [
+    "ace_of_clubs.svg",
+    "2_of_clubs.svg",
+    "3_of_clubs.svg",
+    "4_of_clubs.svg",
+    "5_of_clubs.svg",
+    "6_of_clubs.svg",
+    "7_of_clubs.svg",
+    "8_of_clubs.svg",
+    "9_of_clubs.svg",
+    "10_of_clubs.svg",
+    "jack_of_clubs.svg",
+    "queen_of_clubs.svg",
+    "king_of_clubs.svg",
+    "ace_of_diamonds.svg",
+    "2_of_diamonds.svg",
+    "3_of_diamonds.svg",
+    "4_of_diamonds.svg",
+    "5_of_diamonds.svg",
+    "6_of_diamonds.svg",
+    "7_of_diamonds.svg",
+    "8_of_diamonds.svg",
+    "9_of_diamonds.svg",
+    "10_of_diamonds.svg",
+    "jack_of_diamonds.svg",
+    "queen_of_diamonds.svg",
+    "king_of_diamonds.svg",
+    "ace_of_hearts.svg",
+    "2_of_hearts.svg",
+    "3_of_hearts.svg",
+    "4_of_hearts.svg",
+    "5_of_hearts.svg",
+    "6_of_hearts.svg",
+    "7_of_hearts.svg",
+    "8_of_hearts.svg",
+    "9_of_hearts.svg",
+    "10_of_hearts.svg",
+    "jack_of_hearts.svg",
+    "queen_of_hearts.svg",
+    "king_of_hearts.svg",
+    "ace_of_spades.svg",
+    "2_of_spades.svg",
+    "3_of_spades.svg",
+    "4_of_spades.svg",
+    "5_of_spades.svg",
+    "6_of_spades.svg",
+    "7_of_spades.svg",
+    "8_of_spades.svg",
+    "9_of_spades.svg",
+    "10_of_spades.svg",
+    "jack_of_spades.svg",
+    "queen_of_spades.svg",
+    "king_of_spades.svg"];
+    
+    function shuffle(array) {
+        let counter = array.length;
+        // while there are elements in the array
+        while (counter > 0) {
+            // Pick a random index
+            let index = Math.floor(Math.random() * counter);
+            counter--;
+            // swap the last element with it
+            let temp = array[counter];
+            array[counter] = array[index];
+            array[index] = temp;
+        }
+        return array;
+    }
+
+    function startClock(offset) {
+        var start = new Date().valueOf() - 1000 * offset;
+        clock = setInterval(function() {        
+            var now = new Date().valueOf();
+            duration = Math.round((now - start)/1000);
+            var minutes = Math.floor(duration/60)
+            var seconds = duration % 60;
+            seconds = seconds < 10 ? "0" + seconds : seconds
+            message = minutes + ":" + seconds;
+            $("#clock").text(message);
+        }, 1000);
+        return clock;
+    }
+    
+    function addCopyright() {
+        $("#copyright").css("color", "black")
+                       .css("bottom", "0px")
+                       .css("position", "fixed")
+                       .css("width", "50vw");
+    }
+
+    function positionUndoButton() {
+        $("#undo").css("color", "black")
+                  .css("bottom", "10vh")
+                  .css("position", "fixed")
+                  .css("width", "15vw");
+        $("#undo10").css("color", "black")
+                  .css("left", "25vw")
+                  .css("bottom", "10vh")
+                  .css("position", "fixed")
+                  .css("width", "15vw");
+    }
+
+    function shuffleDoublePack() {
+        function shuffle(array) {
+            var counter = array.length;
+            // while there are elements in the array
+            while (counter > 0) {
+                // Pick a random index
+                var index = Math.floor(Math.random() * counter);
+                counter--;
+                // swap the last element with it
+                var temp = array[counter];
+                array[counter] = array[index];
+                array[index] = temp;
+            }
+            return array;
+        }
+        var numberOfCards = 52 * 2;
+        var cardIndex = Array.apply(null, {length: numberOfCards}).map(Number.call, Number);
+        shuffle(cardIndex);
+        return cardIndex;  
+    }
+    
+    function setupBank() {    
+        var firstBank = Stack.find("bank", 0);
+        for(var i = 0; i < BANK_STACKS; i++) {
+            var stack = stacks[firstBank.index + i];
+        }        
+    }
+        
+    function setupPack(numberOfCardsToDeal) {
+        var pack = Stack.find("pack", 0);
+        for(var i = 0; i < numberOfCardsToDeal; i++) {
+            pack.push(cardIndex.pop());
+        }
+        pack.addClickHandler();
+    }
+    
+    function setupTable(numberOfCardsToDeal, numberToFlip) {
+        var index = 0;
+        var isFaceDown = true;
+        var firstStack = Stack.find("table", 0);
+        var firstStackIndex = firstStack.index;
+        var lastStackIndex = firstStackIndex + TABLE_STACKS; 
+        for(var i = 0; i < numberOfCardsToDeal; i++) {
+            if(i >= numberToFlip) isFaceDown = false;            
+            stacks[index].push(cardIndex.pop(), isFaceDown);
+            index++;
+            if(index === lastStackIndex) index = firstStackIndex;
+        }
+    }
+    
+    function createStacks(type) {
+        var stop;
+		if(type === "bank") stop = BANK_STACKS;
+		if(type === "table") stop = TABLE_STACKS;
+		if(type === "pack") stop = PACK_STACKS;
+ 
+        for(var id = 0; id < stop; id++) {
+            var index = stacks.length;
+            var stack = new Stack(id, index, type);
+            stacks.push(stack);
+        }
+    }
+    
+    function flip(n) {
+        var div = DOM[n];
+        var g = $(div).find("g");
+        var visibility = g.attr("visibility");
+        if(visibility === "visible") {
+            g.attr("visibility", "hidden");
+            div.data("card-info").isFaceDown = true; 
+        } else {
+            g.attr("visibility", "visible");
+            div.data("card-info").isFaceDown = false; 
+        }
+    }
+        
+    function getSVG(pip, color) {
+//        var colors = ['red', 'yellow', 'green', 'orange', 'cornflowerblue', 'blanchedalmond', 'blueviolet', 'deepskyblue', 'gold', 'mediumaquamarine', 'mediumorchid', 'hotpink']
+        var colors = ['cornflowerblue', 'blanchedalmond', 'hotpink', 'gold', 'mediumorchid', 'mediumaquamarine', 'mediumorchid' ]
+        var pips = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+        var svg = `<div><svg visibility='visible' style='width: 100%;'
+                        viewBox='0 0 100 150'>
+  
+                       <rect visibility='visible' x='0' y='0' width='100' height='150' 
+                             rx='10' ry='15'
+                             style='stroke:#660000; fill: ${colors[color]}'/>
+                       <g visibility='visible'>
+                       <ellipse cx='50' cy='75' rx='30' ry='40'
+                             style='stroke:#660000; fill:#ffffff'/>
+                       <text x='50' y='15' style='text-anchor:middle' alignment-baseline='bottom'>${pips[pip]}</text>
+                       <text x='50' y='75' style='text-anchor:middle; font-size:5vw' alignment-baseline='middle'>${pips[pip]}</text>
+                       </g>
+                       </svg></div>`;
+        return svg;
+    }
+    
+    function setupDOM() {
+        // add 2 packs to DOM
+        for(var i = 0; i < 2 * cards.length; i++) {
+            var pip = i%13;
+            var color = Math.floor(i/13) % 4;
+            var div = $(getSVG(pip, color));
+            div = div.clone();
+            $("#cards").append(div);
+            DOM.push(div);
+        }
+    }
+        
+    function addBlanksToDOM() {
+        var html = $("<div><img style='width: 100%; height: auto;' src='images/cards/blank2.svg'/></div>");        
+        for(var i = 0; i < TABLE_STACKS + BANK_STACKS + PACK_STACKS; i++) {
+            var div = html.clone();
+            $("#cards").append(div);
+            blanks.push(div);                
+        }
+    }
+    
+    function activateBases() {
+        for(var i = 0; i < stacks.length; i++) {   
+            var stack = stacks[i];
+            stack.doActivateBase();
+      }    
+    }
+    
+    function doLayouts() {
+        for(var i = 0; i < stacks.length; i++) {
+            var stack = stacks[i];
+//            console.log(stack.type);
+            stack.doLayout();
+        }    
+    }
+    
+    function setupDragAndDrop() {
+        for(var i = 0; i < stacks.length; i++) {
+            var stack = stacks[i];
+            stack.doDragAndDrop();
+        }    
+    }
+    
+    function setupUndo() {
+        function doTable(entry) {
+            var fromStack = stacks[entry.from];
+            var toStack = stacks[entry.to]
+            var count = entry.cards.length;
+            // reverse the transfer
+            var undo = true;
+            fromStack.transfer(toStack, count, undo);
+        }
+        function doDeal(entry) {
+            var cards = entry.cards;
+            for(var i = 0; i < cards; i++) {
+                var entry = journal.pop();
+                if(entry.type === "flip") 
+                    doFlip(entry);
+                else
+                    doTable(entry);
+            }
+            var packStack = Stack.find("pack", 0);
+            packStack.doLayout();
+        }
+        function doFlip(entry) {
+            flip(entry.flip);
+            entry = journal.pop();
+            if(entry.type === "table") doTable(entry);            
+        }
+        function undo() {
+            if(journal.length === 0) return;  // journal empty
+
+            var entry = journal.pop();
+            if(entry.type === "flip") doFlip(entry);
+            if(entry.type === "deal") doDeal(entry);
+            if(entry.type === "table") doTable(entry);
+        }
+
+
+        $("#undo").click(undo);
+        $("#undo10").click(function() {
+            for(var i = 0; i < 10; i++) undo(); 
+        });
+    }
+
+    var TABLE_STACKS = 10;
+    var BANK_STACKS = 8;
+    var PACK_STACKS = 1;
+    var TABLE_STACKS_START = 0;
+    var BANK_STACKS_START = TABLE_STACKS;
+    var PACK_STACKS_START = TABLE_STACKS + BANK_STACKS;
+    var WIDTH = 7;
+    var PADDING = 0;
+    var TOP_SEPARATION = 2;
+    var LEFT_SEPARATION = 8;
+    var TOP_OFFSET = 12;
+    var cardIndex;
+    var cardBeingDragged;
+    var android = navigator.appVersion.indexOf("Android") !== -1;
+    var stacks = [];
+    var journal = [];
+    var DOM = [];
+    var blanks = [];
+    var draggingInProgress = true;
+    var packCounter;
+    
+    $(document).ready(function() {
+        addBlanksToDOM();
+        setupDOM();
+
+        cardIndex = shuffleDoublePack();
+        createStacks("table");
+        createStacks("bank");
+        createStacks("pack");
+        
+        activateBases();
+        setupTable(44, 34);
+        setupPack(60);
+        setupBank();
+        doLayouts();
+        setupDragAndDrop();
+        addCopyright();
+        setupUndo();
+        positionUndoButton();
+    });
+</script>
+</head>
+<body>
+    <div id='cards'></div>
+    <button id='undo' type="button">Undo</button>
+    <button id='undo10' type="button">Undo 10</button>
+    <div id="copyright">SPIDER © Chris Seddon, 25 January 2018</div>
+</body>
+</html>
+

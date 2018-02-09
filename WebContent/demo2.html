@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<!-- © Chris Seddon, 25 January 2018 -->
+<!-- 
+
+3. stacks can build up so that cards are evenually off screen, need to adjust height
+ 
+ -->
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name='viewport' 
+     content='width=device-width, height=device-height, user-scalable=no,
+              initial-scale=1.0, maximum-scale=1.0, user-scalable=0' />
+<link rel="stylesheet" href="jquery.mobile-1.4.5.css">
+<link rel="stylesheet" href="jquery-ui-1.12.1.css">
+<script type="text/javascript" src="jquery-3.2.1.js"></script>
+<script type="text/javascript" src="jquery-ui-1.12.1.js"></script>
+<script src="jquery.mobile.custom.js"></script>
+<script src="jquery_cookie.js"></script>
+<script src="jquery.ui.touch-punch.min.js"></script>
+
+<style type="text/css">
+
+/*
+.ui-draggable-disabled {
+    border-style: solid;
+    border-color: green;
+    border-width: 0px;
+}
+.ui-droppable {
+    border-style: solid;
+    border-color: blue;
+    border-width: 5px;
+}
+
+.ui-draggable {
+    border-style: solid;
+    border-color: red;
+    border-width: 5px;
+}
+
+div.ui-page.ui-page-theme-a.ui-page-active {
+    padding-left: 2vw;
+}
+*/
+body {
+    overflow: hidden;
+    /* disable pull to refresh */
+    overflow-y: hidden;
+    overscroll-behavior-y: contain;
+}
+div#cards div#cards2 {
+    position: absolute;
+    height: 100px;
+    width: 100px;
+    left: 420px;
+}
+.ellipse {
+    clip-path: ellipse(160px 140px at 275px 300px);
+}
+.rectangle {
+    clip-path: rectangle(160px, 140px, 100px, 100px, 10px, 10px);
+}
+.polygon3 {
+    clip-path: polygon(29vw 10vh, 
+                       29vw 90vh, 
+                       35vw 90vh, 
+                       35vw 10vh);
+}
+.polygon2 {
+    clip-path: polygon(29vw 45vh, 
+                       35vw 45vh, 
+                       35vw 54vh, 
+                       29vw 54vh);
+}
+
+.xx {
+    position: absolute;
+    width: 200vw;
+    height: 200vh;
+}
+</style>
+<script>
+// C H S D
+    var cards = "cards.svg";
+    var img = $("<img class='polygon' style='width: 100%; height: auto;' src='images/cards/cards.svg'/>");
+    
+    function displayCard() {
+        var w = 6.1;
+        var h = 10.7;
+        var row = i % 13;
+        var col = Math.floor(i / 13) % 4;
+        var x0 = 10.3 + row * w;
+        var y0 = 33.5 + col * h;
+        var x1 = x0 + w;
+        var y1 = y0 + h;
+        var polygon = `polygon(${x0}% ${y0}%, ${x1}% ${y0}%, ${x1}% ${y1}%, ${x0}% ${y1}%)`;
+        
+        $("#cards").append(img);
+        img.css("clip-path", polygon);
+        i += 1;
+        var zoom = 4.10;
+        var left = -x0 * zoom;
+        console.log(left)
+        $("#cards")
+           .css("transform-origin", "top left")
+           .css("transform", `translate(${-x0*zoom}%, ${-y0*zoom}%) scale(${zoom}, ${zoom})`)
+           .css("position", "relative")
+    }
+    
+    function displayCard2(selector, pip, suit, zoom) {
+        var row;
+        var col;
+        switch(suit) {
+            case "clubs":    suit = 0; break;
+            case "hearts":   suit = 1; break;
+            case "spades":   suit = 2; break;
+            case "diamonds": suit = 3; break;
+        }
+        switch(pip) {
+            case "jack":     pip = 11; break;
+            case "queen":    pip = 12; break;
+            case "king":     pip = 13; break;
+            case "ace":      pip =  1; break;
+            default:         pip = parseInt(pip);
+        }
+        var w = 6.1;
+        var h = 10.7;
+        var col = suit;
+        var row = pip - 1;
+        var x0 = 10.3 + row * w;
+        var y0 = 33.5 + col * h;
+        var x1 = x0 + w;
+        var y1 = y0 + h;
+        var polygon = `polygon(${x0}% ${y0}%, ${x1}% ${y0}%, ${x1}% ${y1}%, ${x0}% ${y1}%)`;
+        
+        var img = "<img class='polygon' style='width: 100%; height: auto;' src='images/cards/cards.svg'/>";
+        dom.push(img);
+        img = $(img);
+        $(selector).append(img);
+        img.css("clip-path", polygon)
+           .css("position", "relative");
+        $(selector)
+           .css("transform-origin", "top left")
+           .css("transform", `translate(${-x0*zoom}%, ${-y0*zoom}%) scale(${zoom}, ${zoom})`)
+           .css("position", "relative")
+    }
+
+    function setupDOM() {
+        // add 2 packs to DOM
+        for(var i = 0; i < 2 * cards.length; i++) {
+            var part1 = "<div><img style='width: 100%; height: auto;' src='images/cards/";
+            var part2 = cards[i%52];    // %52 because of 2 packs of cards
+            var part3 = "'/></div>";
+            var theHtml = part1 + part2 + part3;
+            var div = $(theHtml);
+            $("#cards").append(div);
+            DOM.push(div);
+        }
+    }
+
+    var i = 0;
+    var top = 0;    
+    var left = 0;
+    var dom = [];
+    
+    $(document).ready(function() {
+        
+        displayCard2("#cards", "jack", "diamonds", 1);
+        displayCard2("#cards2", "ace", "hearts", 1);
+    });
+</script>
+</head>
+<body>
+    <div id='frame'>
+        <div id='cards'></div>
+        <div id='cards2'></div>
+    </div>
+</body>
+</html>
+

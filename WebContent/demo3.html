@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<!-- © Chris Seddon, 25 January 2018 -->
+<!-- 
+
+3. stacks can build up so that cards are evenually off screen, need to adjust height
+ 
+ -->
+<html>
+<head>
+<meta charset="utf-8" />
+<meta name='viewport'
+	content='width=device-width, height=device-height, user-scalable=no,
+              initial-scale=1.0, maximum-scale=1.0, user-scalable=0' />
+<link rel="stylesheet" href="jquery.mobile-1.4.5.css">
+<link rel="stylesheet" href="jquery-ui-1.12.1.css">
+<script type="text/javascript" src="jquery-3.2.1.js"></script>
+<script type="text/javascript" src="jquery-ui-1.12.1.js"></script>
+<script src="jquery.mobile.custom.js"></script>
+<script src="jquery_cookie.js"></script>
+<script src="jquery.ui.touch-punch.min.js"></script>
+
+<style type="text/css">
+// div.ui-page.ui-page-theme-a.ui-page-active {
+// 	padding-left: 2vw;
+//}
+
+#frame {
+    height: 50vh;
+    width: 50vw;
+    border-style: solid;
+    border-width: 1px;
+}
+div#cards div {
+    height: 20vh;
+    width: 20vw;    
+}
+</style>
+
+<script>
+    function getSVG(pip, color) {
+        var colors = ['red', 'yellow', 'green', 'orange']
+
+        var svg = `<div><svg style='height: 100%;'
+                        viewBox='0 0 100 100'>
+  
+                       <rect x='0' y='0' width='60' height='100' 
+                             rx='5' ry='5'
+                             style='stroke:#660000; fill: ${colors[color]}'/>
+                       <ellipse cx='30' cy='50' rx='10' ry='20'
+                             style='stroke:#660000; fill:#cccccc'/>
+                       <text x='30' y='50' style='text-anchor: middle' alignment-baseline='middle'>${pip}</text>
+                   </svg></div>`;
+        return svg;
+    }
+
+    function setupDOM() {
+        // add 2 packs to DOM
+//        for(var i = 0; i < 2 * cards.length; i++) {
+        for(var i = 0; i < 20; i++) {
+            var pip = i%13;
+            var color = Math.floor(i/13) % 2;
+            var div = $(getSVG(pip, color));
+            div = div.clone();
+            $("#cards").append(div);
+            div.css("position", "absolute")
+            .css("width", (10) + "vw")
+            .css("left", "" + (i*5) + "vw")
+            .css("top", "" + (5) + "vw")
+            .css("z-index", "" + 0);
+        }
+    }
+
+
+        
+        
+        
+    $(document).ready(function() {
+        setupDOM();
+    });
+</script>
+</head>
+<body>
+	<div id='cards'>	</div>
+</body>
+</html>
+

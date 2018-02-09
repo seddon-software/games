@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<!-- © Chris Seddon, 25 January 2018 -->
+<!-- 
+
+3. stacks can build up so that cards are evenually off screen, need to adjust height
+ 
+ -->
+<html>
+<head>
+<meta charset="utf-8" />
+<meta name='viewport'
+	content='width=device-width, height=device-height, user-scalable=no,
+              initial-scale=1.0, maximum-scale=1.0, user-scalable=0' />
+<script type="text/javascript" src="jquery-3.2.1.js"></script>
+
+<style type="text/css">
+
+#frame {
+    height: 50vh;
+    width: 50vw;
+    border-style: solid;
+    border-width: 1px;
+}
+div#cards div {
+    height: 20vh;
+    width: 20vw;    
+}
+</style>
+
+<script>
+
+
+        
+    function swap(a, b) {
+        // create temporary placeholder
+        var temp = $("<div>");
+        // 3-step swap
+        a.before(temp);
+        b.before(a);
+        temp.after(b).remove();
+    }
+        
+    $(document).ready(function() {
+        for(var i = 0; i < 5; i++) {
+            var htmlG = $("<g/>");
+            var htmlGG = $("<gg/>");
+            
+            var g = $("#cards").find("g");
+            var gg = $("#cards").find("gg");
+            var g_html = g.html();
+            var gg_html = gg.html();
+            g.empty();
+            gg.empty();
+            g.html(gg_html);
+            gg.html(g_html);
+        }
+    });
+</script>
+</head>
+<body>
+	<div id='cards'>	
+        <div><svg style='width: 100%;'
+                        viewBox='0 0 100 150'>
+  
+                       <rect x='0' y='0' width='100' height='150' 
+                             rx='10' ry='15'
+                             style='stroke:#660000; fill:blue'/>
+                       <g>
+                       <ellipse cx='50' cy='75' rx='30' ry='40'
+                             style='stroke:#660000; fill:#ffffff'/>
+                       <text x='50' y='15' style='text-anchor:middle' alignment-baseline='bottom'>7</text>
+                       <text x='50' y='75' style='text-anchor:middle; font-size:5vw' alignment-baseline='middle'>7</text>
+                       </g>
+                       <gg/>
+                       </svg></div>
+      </div>
+</body>
+</html>
+

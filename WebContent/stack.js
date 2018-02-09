@@ -117,7 +117,6 @@ class Stack {
             // position pack counter
             if(packCounter === undefined) { // packCounter is a global variable
                 packCounter = true;  // ensure this code is only executed once
-                console.log(stack.length());
                 var html = "<div id='packCounter'>" + stack.length() + "</div>";        
                 div = $(html);
                 $("#cards").append(div);
@@ -151,17 +150,11 @@ class Stack {
         div.draggable(
             { 
                 start:  function(event, ui) { 
-                            //console.log("start dragging");
                             draggingInProgress = true;
                             doDrag(this); 
                         },
                 stop:   function(e, ui) {
-                            //console.log("stop dragging");
                             draggingInProgress = false;
-                            //var dragStackIndex = $(div).data("card-info").stackIndex;
-                            //var dragStack = stacks[dragStackIndex];
-                            //dragStack.doLayout();
-                            //dragStack.doDragAndDrop();
                         },
                 revert: function() { 
                             if(draggingInProgress) {
@@ -212,7 +205,6 @@ class Stack {
     }
     
     compute() {
-//        console.log(this.cards);
         // how cards are in pip sequence
         var up = this.howManyCardsSequence(+1);
         var down = this.howManyCardsSequence(-1);
@@ -467,4 +459,5 @@ function dump(n) {
     }
     console.log(stack.type + ":" + stack.id + "   " + s)
 }
+
 var d = dump;
