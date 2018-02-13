@@ -324,7 +324,6 @@ class Stack {
                     howMany = topPip - draggedPip;
             }
         }
-        console.log("transfer: " + howMany);
         return howMany;    
     }
     
@@ -393,6 +392,7 @@ class Stack {
                 );
             }
         }
+        autoBank();
     }
 }
 
@@ -424,7 +424,6 @@ function cardIsFaceDown(card) {
 }
 
 function doDrag(div) {
-    console.log("doDrag");    
     var stackIndex = $(div).data("card-info").stackIndex;
     dragStackIndex = $(div).data("card-info").stackIndex;
 }
@@ -432,7 +431,6 @@ function doDrag(div) {
 function doDrop(div) {
     if(draggingInProgress === undefined) return;
     draggingInProgress = undefined;
-    console.log("doDrop");
     
     var dropStackIndex = $(div).data("card-info").stackIndex;
     var dragStack = stacks[dragStackIndex];
@@ -449,6 +447,41 @@ function doDrop(div) {
     //console.log("count: " + count);
     var undo = false;
     dropStack.transfer(dragStack, count, undo);
+    autoBank();
+    autoBank();
+    if(debug) debugIt();
+}
+
+function autoBank() {
+    for(var i = 0; i < BANK_STACKS; i++) {
+        var bankStack = Stack.find("bank", i);
+        for(var k = 0; k < TABLE_STACKS; k++) {
+            var tableStack = Stack.find("table", k);
+            bankStack.compute();
+            tableStack.compute();
+            var count = bankStack.bankStackWillAccept(tableStack);
+            if(count > 0) {
+                bankStack.transfer(tableStack, count, undo);
+                // ?? should I add something to the journal here??
+            }
+        }
+    }    
+}
+
+function debugIt() {
+    var html = "";
+    for(var i = 0; i < BANK_STACKS; i++) {
+        var bankStack = Stack.find("bank", i);
+        for(var k = 0; k < TABLE_STACKS; k++) {
+            var tableStack = Stack.find("table", k);
+            bankStack.compute();
+            tableStack.compute();
+            var count = bankStack.bankStackWillAccept(tableStack);
+            html += count;
+        }
+        html += "<br/>";
+    }
+    $("#debug").html(html);
 }
 
 function dump(n) {
@@ -457,7 +490,9 @@ function dump(n) {
     for(var i = 0; i < stack.length(); i++) {
         s = s + "" + stack.cards[i]%52 + ",";
     }
-    console.log(stack.type + ":" + stack.id + "   " + s)
+    var message = stack.type + ":" + stack.id + "   " + s;
+    console.log(message);
+    return message;
 }
 
 var d = dump;

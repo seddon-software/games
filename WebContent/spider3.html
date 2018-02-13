@@ -2,8 +2,8 @@
 <!-- © Chris Seddon, 25 January 2018 -->
 <!-- 
 
-3. stacks can build up so that cards are evenually off screen, need to adjust height
- 
+1. stacks can build up so that cards are evenually off screen, need to adjust height
+2. autobank might need to add to the journal 
  -->
 <html>
 <head>
@@ -156,6 +156,11 @@ var cards = [
                   .css("bottom", "10vh")
                   .css("position", "fixed")
                   .css("width", "15vw");
+        $("#debug").css("color", "black")
+                  .css("left", "45vw")
+                  .css("bottom", "30vh")
+                  .css("position", "fixed")
+                  .css("width", "35vw");
     }
 
     function shuffleDoublePack() {
@@ -224,31 +229,39 @@ var cards = [
     function flip(n) {
         var div = DOM[n];
         var g = $(div).find("g");
+        var rect = $(div).find("rect");
+        var rects = rect.get();
         var visibility = g.attr("visibility");
         if(visibility === "visible") {
+            
+            $(rects[0]).attr("visibility", "hidden");
+            $(rects[1]).attr("visibility", "visible");
             g.attr("visibility", "hidden");
             div.data("card-info").isFaceDown = true; 
         } else {
+            $(rects[0]).attr("visibility", "visible");
+            $(rects[1]).attr("visibility", "hidden");
             g.attr("visibility", "visible");
             div.data("card-info").isFaceDown = false; 
         }
     }
         
     function getSVG(pip, color) {
-//        var colors = ['red', 'yellow', 'green', 'orange', 'cornflowerblue', 'blanchedalmond', 'blueviolet', 'deepskyblue', 'gold', 'mediumaquamarine', 'mediumorchid', 'hotpink']
-        var colors = ['cornflowerblue', 'blanchedalmond', 'hotpink', 'gold', 'mediumorchid', 'mediumaquamarine', 'mediumorchid' ]
+        var colors = ['cornflowerblue', 'blanchedalmond', 'hotpink', 'mediumaquamarine']
         var pips = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
         var svg = `<div><svg visibility='visible' style='width: 100%;'
                         viewBox='0 0 100 150'>
-  
-                       <rect visibility='visible' x='0' y='0' width='100' height='150' 
-                             rx='10' ry='15'
-                             style='stroke:#660000; fill: ${colors[color]}'/>
+                        <rect visibility='visible' x='0' y='0' width='100' height='150' 
+                              rx='10' ry='15'
+                              style='stroke:#660000; fill: ${colors[color]}'/>
+                        <rect visibility='hidden' x='0' y='0' width='100' height='150' 
+                              rx='10' ry='15'
+                              style='stroke:#660000; fill:yellow'}'/>
                        <g visibility='visible'>
-                       <ellipse cx='50' cy='75' rx='30' ry='40'
-                             style='stroke:#660000; fill:#ffffff'/>
+                       <ellipse cx='50' cy='75' rx='40' ry='50'
+                             style='stroke:#99ffff; fill:#aaccee'/>
                        <text x='50' y='15' style='text-anchor:middle' alignment-baseline='bottom'>${pips[pip]}</text>
-                       <text x='50' y='75' style='text-anchor:middle; font-size:5vw' alignment-baseline='middle'>${pips[pip]}</text>
+                       <text x='50' y='75' style='stroke:#aaaa00; fill:black; text-anchor:middle; font-size:4vw' alignment-baseline='middle'>${pips[pip]}</text>
                        </g>
                        </svg></div>`;
         return svg;
@@ -338,7 +351,8 @@ var cards = [
             for(var i = 0; i < 10; i++) undo(); 
         });
     }
-
+    
+    var debug = true;
     var TABLE_STACKS = 10;
     var BANK_STACKS = 8;
     var PACK_STACKS = 1;
@@ -378,6 +392,7 @@ var cards = [
         addCopyright();
         setupUndo();
         positionUndoButton();
+        autoBank();
     });
 </script>
 </head>
@@ -385,6 +400,7 @@ var cards = [
     <div id='cards'></div>
     <button id='undo' type="button">Undo</button>
     <button id='undo10' type="button">Undo 10</button>
+    <div id='debug'></div>
     <div id="copyright">SPIDER © Chris Seddon, 25 January 2018</div>
 </body>
 </html>
