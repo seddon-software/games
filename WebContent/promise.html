@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<!-- © Chris Seddon, 25 January 2018 -->
+<!-- 
+
+3. stacks can build up so that cards are evenually off screen, need to adjust height
+ 
+ -->
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name='viewport' 
+     content='width=device-width, height=device-height, user-scalable=no,
+              initial-scale=1.0, maximum-scale=1.0, user-scalable=0' />
+<link rel="stylesheet" href="jquery.mobile-1.4.5.css">
+<link rel="stylesheet" href="jquery-ui-1.12.1.css">
+<script type="text/javascript" src="jquery-3.2.1.js"></script>
+<script type="text/javascript" src="jquery-ui-1.12.1.js"></script>
+<script src="jquery.mobile.custom.js"></script>
+<script src="jquery_cookie.js"></script>
+<script src="jquery.ui.touch-punch.min.js"></script>
+<script src="stack.js"></script>
+<style>
+#box1 {
+    left: 10vw;
+}
+#box2 {
+    left: 50vw;
+}
+#box1, #box2 {
+    position: absolute;
+    top: 10vh;
+    height: 25vh;
+    width: 25vw;
+    border-color: blue;
+    border-width: 1px;
+    border-style: solid;
+    background-color: red;
+}
+</style>
+</head>
+<body>
+<script>
+function asyncEvent() {
+    var dfd = jQuery.Deferred();
+
+    $("#box1").click(function() {
+        dfd.resolve( "box1" );
+    });
+    $("#box2").click(function() {
+        dfd.resolve( "box2" );
+    });
+    return dfd.promise();
+}
+
+$(document).ready(function() {
+
+    // Attach a done, fail, and progress handler for the asyncEvent
+    $.when(asyncEvent()).then(
+        function(status) {
+            alert(`${status}: done`);
+        },
+        function( status ) {
+            alert(`${status}: fail`);
+        },
+        function( status ) {
+            $("body").append(status);
+        });
+    });
+
+</script>
+<div id="box1"></div>
+<div id="box2"></div>
+</body>
