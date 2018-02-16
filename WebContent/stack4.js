@@ -29,33 +29,6 @@ class Stack {
     }
     
     stackWillAccept(dragStack) {
-        var deferred = $.Deferred();
-        // give the user an option not to transfer all of the cards
-        function clickIt() {
-            deferred.resolve();
-            $("#modal").dialog("destroy");
-        }
-        function promptForCards() {
-            $("<div id='modal'></div>").dialog(
-                    { modal: true,
-                      dialogClass: "no-close",
-                      resizable: false,
-                      width: `${(WIDTH+1)*up.length}vw`  }
-            );
-            var result = -1;
-            for(var i = 0; i < up.length; i++) {
-                var div = getNewCard(up[i]);
-                $("#modal").append(div);
-                var css = {};
-                css["position"] = "absolute";
-                css["width"] = `${WIDTH}vw`;
-                css["left"] = `${(WIDTH+1)*i}vw`;
-                css["top"] = `0vh`;
-                css["z-index"] = `1000`;
-                div.css(css);
-                div.click(clickIt);
-            }
-        }
         // examples:
         //
         // a) dropStack = [x x x 8], dropTop = 8
@@ -190,11 +163,38 @@ class Stack {
         if(sequence === 0) result = doSingleCardSequence(up);
         if(sequence > 0) result = doUpSequence(up); 
         if(sequence < 0) result = doDownSequence(down);
-        promptForCards();
-        return deferred.promise();
-//        return result;
+        return result;
     }
+/***
+ * 
+        function clickIt() {
+            deferred.resolve();
+            $("#modal").dialog("destroy");
+        }
+        function promptForCards() {
+            $("<div id='modal'></div>").dialog(
+                    { modal: true,
+                      dialogClass: "no-close",
+                      resizable: false,
+                      width: `${(WIDTH+1)*up.length}vw`  }
+            );
+            var result = -1;
+            for(var i = 0; i < up.length; i++) {
+                var div = getNewCard(up[i]);
+                $("#modal").append(div);
+                var css = {};
+                css["position"] = "absolute";
+                css["width"] = `${WIDTH}vw`;
+                css["left"] = `${(WIDTH+1)*i}vw`;
+                css["top"] = `0vh`;
+                css["z-index"] = `1000`;
+                div.css(css);
+                div.click(clickIt);
+            }
+        }
 
+ * 
+ *****/
     constructor(id, index, type) {
         this.id = id;
         this.type = type;

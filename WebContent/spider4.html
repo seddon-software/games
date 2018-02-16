@@ -432,7 +432,7 @@ ui-droppable {
         dragStack = stacks[stackIndex];
     }
 
-    function doDrop(div) {        
+    function doDrop2(div) {        
         var stackIndex = $(div).data("card-info").stackIndex;
         dropStack = stacks[stackIndex];
         var cards = [];
@@ -465,7 +465,7 @@ ui-droppable {
 
     }
     
-    function doDropOld(div) {        
+    function doDrop(div) {        
         var stackIndex = $(div).data("card-info").stackIndex;
         dropStack = stacks[stackIndex];
         var cards = dropStack.stackWillAccept(dragStack);
