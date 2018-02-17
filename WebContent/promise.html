@@ -42,29 +42,23 @@
 <script>
 function asyncEvent() {
     var dfd = jQuery.Deferred();
-
+    console.log("asyncEvent");
     $("#box1").click(function() {
         dfd.resolve( "box1" );
     });
     $("#box2").click(function() {
         dfd.resolve( "box2" );
     });
-    return dfd.promise();
+    var cards = [3, 4, 5];
+    dfd.resolve(cards);
+    return dfd;
 }
 
-$(document).ready(function() {
+function done(status) { console.log(`${status}: done`); }
 
-    // Attach a done, fail, and progress handler for the asyncEvent
-    $.when(asyncEvent()).then(
-        function(status) {
-            alert(`${status}: done`);
-        },
-        function( status ) {
-            alert(`${status}: fail`);
-        },
-        function( status ) {
-            $("body").append(status);
-        });
+$(document).ready(
+    function() {    
+        $.when(asyncEvent()).then(done);
     });
 
 </script>

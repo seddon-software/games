@@ -59,6 +59,43 @@ class Stack {
             return count;
         }
 
+        function promptForCards(result) {
+            function getCSS() {
+                var css = {};
+                css["position"] = "absolute";
+                css["width"] = `${WIDTH}vw`;
+                css["left"] = `${(WIDTH+1)*i}vw`;
+                css["bottom"] = `${k*2}vh`;
+                css["z-index"] = `${1000-k}`;
+                return css;
+            }
+            
+            var dialogHeight = $(window).height() * 0.3; // + WIDTH * up.length * 1.5;
+            
+            $("<div id='modal'></div>").dialog(
+                    { 
+                      modal: true,
+                      dialogClass: "no-close",
+                      resizable: false,
+                      width: `${(WIDTH+1)*up.length}vw`,
+                      height: `${dialogHeight}`
+                    }
+            );
+            for(var i = 0; i < result.length; i++) {
+                for(var k = i; k < result.length; k++) {
+                    var div = getNewCard(result[k]);
+                    $("#modal").append(div);
+                    div.css(getCSS());
+                    div.on("click", [i+1], function(event) { // need a copy of the closure i
+                        var howManyCards = event.data[0];
+                        result = result.slice(0, howManyCards);
+                        deferred.resolve(result);
+                        $("#modal").dialog("destroy");
+                    });
+                }
+            }
+        }
+
         function doSingleCardSequence() {
         // if stacks are not empty dragTop and dropTop must differ by one
         // bank stacks check suit as well as pip value
@@ -76,7 +113,7 @@ class Stack {
                     if(pip(dropTop) - pip(dragTop) === 1) result = up;
                 }
             }
-            return result;
+            deferred.resolve(result);
         }
 
         function doUpSequence() {
@@ -105,8 +142,7 @@ class Stack {
                     }
                 }
             }
-            var howManyCards = 2;
-            return result.slice(0, howManyCards);
+            promptForCards(result);
         }
 
         function doDownSequence() {
@@ -146,9 +182,9 @@ class Stack {
                     if(dragTop%52 - dropTop%52 === 1) result = cards;
                 }
             }
-            return result;
+            deferred.resolve(result);
         }
-
+        var deferred = jQuery.Deferred();
         var result = [];
         var dropStack = this;
         var dropTop = dropStack.getTop();
@@ -160,41 +196,12 @@ class Stack {
         var up = dragStack.getUp();
         var down = dragStack.getDown();
         var sequence = getSequence();
-        if(sequence === 0) result = doSingleCardSequence(up);
-        if(sequence > 0) result = doUpSequence(up); 
-        if(sequence < 0) result = doDownSequence(down);
-        return result;
+        if(sequence === 0) doSingleCardSequence(up);
+        if(sequence > 0) doUpSequence(up); 
+        if(sequence < 0) doDownSequence(down);
+        return deferred.promise();
     }
-/***
- * 
-        function clickIt() {
-            deferred.resolve();
-            $("#modal").dialog("destroy");
-        }
-        function promptForCards() {
-            $("<div id='modal'></div>").dialog(
-                    { modal: true,
-                      dialogClass: "no-close",
-                      resizable: false,
-                      width: `${(WIDTH+1)*up.length}vw`  }
-            );
-            var result = -1;
-            for(var i = 0; i < up.length; i++) {
-                var div = getNewCard(up[i]);
-                $("#modal").append(div);
-                var css = {};
-                css["position"] = "absolute";
-                css["width"] = `${WIDTH}vw`;
-                css["left"] = `${(WIDTH+1)*i}vw`;
-                css["top"] = `0vh`;
-                css["z-index"] = `1000`;
-                div.css(css);
-                div.click(clickIt);
-            }
-        }
 
- * 
- *****/
     constructor(id, index, type) {
         this.id = id;
         this.type = type;

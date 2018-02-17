@@ -23,6 +23,7 @@
 
 div.ui-page.ui-page-theme-a.ui-page-active {
     padding-left: 2vw;
+    background-color: black;
 }
 
 .no-close .ui-dialog-titlebar-close {
@@ -36,6 +37,11 @@ div.ui-page.ui-page-theme-a.ui-page-active {
 .ui-pagecontainer {
 border: 0;
 padding: 0;
+}
+
+
+div.ui-dialog {
+    background-color: antiquewhite !important;
 }
 
 body {
@@ -73,9 +79,9 @@ ui-droppable {
     }
 
     function resetPack() {
-        // remove all click handlers
-        // turn all cards face down
         var packStack = Stack.find("pack", 0);
+        // remove all click handlers
+        // and turn all cards face down
         for(var i = 0; i < packStack.length(); i++) {
             var card = packStack.cards[i];
             var div = DOM[card];
@@ -86,6 +92,9 @@ ui-droppable {
     
     function packClickHandler() {
         var packStack = Stack.find("pack", 0);
+        // don't deal if pack empty
+        if(packStack.length() === 0) return;
+        
         // disable click handler on top before dealing
         var packTop = packStack.getTop();
         var div = DOM[packTop];
@@ -148,10 +157,11 @@ ui-droppable {
     function getCSS(div, cardNo) {
         function getPackCSS(cardPosition) {
             // cardPosition = -1 for blank card
+            var block = cardPosition === -1 ? 0 : Math.floor(cardPosition/TABLE_STACKS);
             var css = {};
             css["position"] = "absolute";
             css["width"] = `${WIDTH}vw`;
-            css["left"] = `${(WIDTH+LEFT_SEPARATION)*(BANK_STACKS+1)}vw`;
+            css["left"] = `${(WIDTH+LEFT_SEPARATION)*(BANK_STACKS+1)-block}vw`;
             css["top"] = `${TOP_OFFSET}vw`;
             css["z-index"] = `${cardPosition}`;
             return css;
@@ -200,7 +210,6 @@ ui-droppable {
     
     function redraw() {
         // to be called initially and then after each transfer 
-        //console.log("redraw");
         for(var i = 0; i < 2*52; i++) {
             var div = DOM[i];
             var css = getCSS(div, i);
@@ -427,48 +436,7 @@ ui-droppable {
         return visibility === "hidden";
     }
     
-    function doDrag(div) {
-        var stackIndex = $(div).data("card-info").stackIndex;
-        dragStack = stacks[stackIndex];
-    }
-
-    function doDrop2(div) {        
-        var stackIndex = $(div).data("card-info").stackIndex;
-        dropStack = stacks[stackIndex];
-        var cards = [];
-        $.when(dropStack.stackWillAccept(dragStack)).then(
-        function() {
-            console.log("when")
-            if(cards.length !== 0) {
-                // pass a copy of cards to journal
-                var undo = false;
-                addToJournal("table", cards.slice(0), dragStack, dropStack, undo);
-                dropStack.transfer(dragStack, cards, undo); // calls redraw
-    
-                // make sure top card is visible
-                var top = dragStack.getTop();
-                if(cardIsFaceDown(top)) {
-                    addToJournal("flip", [top], dragStack, dropStack, undo);           
-                    flip(top);
-                }
-                revert = false;
-            } else {
-                revert = true;
-            }
-        },
-        function( status ) {
-            alert(`${status}: fail`);
-        },
-        function( status ) {
-            $("body").append(status);
-        });
-
-    }
-    
-    function doDrop(div) {        
-        var stackIndex = $(div).data("card-info").stackIndex;
-        dropStack = stacks[stackIndex];
-        var cards = dropStack.stackWillAccept(dragStack);
+    function transferCards(cards, dropStack, dragStack) {
         if(cards.length !== 0) {
             // pass a copy of cards to journal
             var undo = false;
@@ -484,9 +452,30 @@ ui-droppable {
             revert = false;
         } else {
             revert = true;
-        }
+        }        
     }
     
+    function doDrop(div) {
+        if(dropped) return;  // prevent multiple drops
+        console.log("doDrop()");
+        // dragStack is global
+        function doTransferCards(cards) {
+            transferCards(cards, dropStack, dragStack);
+        }
+        var stackIndex = $(div).data("card-info").stackIndex;
+        dropStack = stacks[stackIndex];
+        var deferred = dropStack.stackWillAccept(dragStack);
+        $.when(deferred).then(doTransferCards);
+        dropped = true;
+        revert = false;
+    }
+    
+    function doDrag(div) {
+        var stackIndex = $(div).data("card-info").stackIndex;
+        dragStack = stacks[stackIndex];
+        dropped = false;
+    }
+
     function makeDroppable(div) {
         div.droppable(
         { 
@@ -619,6 +608,7 @@ var blanks = [];
 var cards = [];
 var packCounter;
 var dragStack;
+var dropped = false;
 var revert = false;
 var modal = false;
 
@@ -630,8 +620,8 @@ $(document).ready(function() {
     setupBlanks();
     positionFurniture();
     shuffleDoublePack();    
-    setupTable(23, 0);
-    setupPack(81);
+    setupTable(44, 34);
+    setupPack(60);
     redraw();
     setupDragAndDrop();
     setupUndo();
