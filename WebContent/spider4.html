@@ -1,8 +1,5 @@
 <!DOCTYPE html>
 <!-- © Chris Seddon, 25 January 2018 -->
-<!-- 
-
- -->
 <html>
 <head>
   <meta charset="utf-8" />
@@ -18,58 +15,42 @@
 <script src="jquery.ui.touch-punch.min.js"></script>
 <script src="stack4.js"></script>
 
-<style type="text/css">
-
-
-div.ui-page.ui-page-theme-a.ui-page-active {
-    padding-left: 2vw;
-    background-color: black;
-}
-
-.no-close .ui-dialog-titlebar-close {
-    display: none;
-}
-
-.ui-dialog .ui-dialog-titlebar {
-    visibility: hidden;
-}
-
-.ui-pagecontainer {
-border: 0;
-padding: 0;
-}
-
-
-div.ui-dialog {
-    background-color: antiquewhite !important;
-}
-
-body {
-    overflow: hidden;
-    /* disable pull to refresh */
-    overflow-y: hidden;
-    overscroll-behavior-y: contain;
-}
-div#cards {
-    position: relative;
-}
-ui-draggable {
-    border-color: blue;
-    border-width: 1px;
-    border-style: solid;
-}
-ui-draggable-disabled {
-    border-color: red;
-    border-width: 1px;
-    border-style: solid;
-}
-ui-droppable {
-    border-color: blue;
-    border-width: 1px;
-    border-style: solid;
-}
-</style>
 <script>
+    function doDrop(div) {
+        if(dropped) return;  // prevent multiple drops
+        console.log("doDrop()");
+        // dragStack is global
+        function doTransferCards(cards) {
+            transferCards(cards, dropStack, dragStack);
+        }
+        var stackIndex = $(div).data("card-info").stackIndex;
+        dropStack = stacks[stackIndex];
+        var deferred = dropStack.stackWillAccept(dragStack);
+        $.when(deferred).then(doTransferCards);
+        dropped = true;
+    }
+
+    function doDrag(div) {
+        var stackIndex = $(div).data("card-info").stackIndex;
+        dragStack = stacks[stackIndex];
+        dropped = false;
+    }
+
+    function makeDroppable(div) {
+        div.droppable(
+        { 
+            drop:   function() { doDrop(this); }
+        });
+    }
+
+    function makeDraggable(div) {
+        div.draggable(
+        { 
+            start:  function() { doDrag(this); },
+            stop:   function() { redraw(); }
+        });
+    }
+
     function enablePackClickHandlerOnTopCard() {
         var packStack = Stack.find("pack", 0);
         if(packStack.isEmpty()) return;
@@ -89,7 +70,7 @@ ui-droppable {
             if(!cardIsFaceDown(card)) flip(card);
         }
     }
-    
+
     function packClickHandler() {
         var packStack = Stack.find("pack", 0);
         // don't deal if pack empty
@@ -168,15 +149,22 @@ ui-droppable {
         }
         
         function getTableCSS(tableId, cardPosition) {
+            function getFactor() { // gets smaller as stack gets larger
+                var stack = Stack.find("table", tableId);
+                var size = stack.length();
+                var factor = 1.0;
+                if(size > 13) factor = 0.5;
+                if(size > 26) factor = 0.3;
+                return factor;
+            }
             // cardPosition = -1 for blank card
             var zIndex = cardPosition === -1 ? 0 : cardPosition + 1; 
             var top = cardPosition === -1 ? 0 : cardPosition;
-            top += 7;
             var css = {};
             css["position"] = "absolute";
             css["width"] = `${WIDTH}vw`;
             css["left"] = `${(WIDTH+LEFT_SEPARATION)*tableId}vw`;
-            css["top"] = `${TOP_SEPARATION * top + TOP_OFFSET}vw`;
+            css["top"] = `${TOP_SEPARATION * top * getFactor() + TOP_SEPARATION * 7 + TOP_OFFSET}vw`;
             css["z-index"] = `${zIndex}`;
             return css;
         }
@@ -260,20 +248,22 @@ ui-droppable {
     
     function positionFurniture() {
         $("#undo").css("color", "black")
-                  .css("bottom", "10vh")
+                  .css("bottom", "5vh")
                   .css("position", "fixed")
-                  .css("width", "15vw");
+                  .css("width", "10vw")
+                  .css("border-radius", "1vw");
         $("#undo10").css("color", "black")
-                  .css("left", "25vw")
-                  .css("bottom", "10vh")
+                  .css("left", "15vw")
+                  .css("bottom", "5vh")
                   .css("position", "fixed")
-                  .css("width", "15vw");
+                  .css("width", "10vw")
+                  .css("border-radius", "1vw");
         $("#debug").css("color", "black")
                   .css("left", "45vw")
                   .css("bottom", "30vh")
                   .css("position", "fixed")
                   .css("width", "35vw");
-        $("#copyright").css("color", "black")
+        $("#copyright").css("color", "white")
                   .css("bottom", "0px")
                   .css("position", "fixed")
                   .css("width", "50vw");
@@ -449,49 +439,9 @@ ui-droppable {
                 addToJournal("flip", [top], dragStack, dropStack, undo);           
                 flip(top);
             }
-            revert = false;
-        } else {
-            revert = true;
         }        
     }
     
-    function doDrop(div) {
-        if(dropped) return;  // prevent multiple drops
-        console.log("doDrop()");
-        // dragStack is global
-        function doTransferCards(cards) {
-            transferCards(cards, dropStack, dragStack);
-        }
-        var stackIndex = $(div).data("card-info").stackIndex;
-        dropStack = stacks[stackIndex];
-        var deferred = dropStack.stackWillAccept(dragStack);
-        $.when(deferred).then(doTransferCards);
-        dropped = true;
-        revert = false;
-    }
-    
-    function doDrag(div) {
-        var stackIndex = $(div).data("card-info").stackIndex;
-        dragStack = stacks[stackIndex];
-        dropped = false;
-    }
-
-    function makeDroppable(div) {
-        div.droppable(
-        { 
-            drop:   function() { doDrop(this); }
-        });
-    }
-    
-    function makeDraggable(div) {
-        div.draggable(
-        { 
-            start:  function() { revert = true; doDrag(this); },
-            revert: function() { return revert; },
-            stop:   function() { revert = false; }
-        });
-    }
-
     function autoBank() {
         for(var i = 0; i < BANK_STACKS; i++) {
             var bankStack = Stack.find("bank", i);
@@ -609,7 +559,6 @@ var cards = [];
 var packCounter;
 var dragStack;
 var dropped = false;
-var revert = false;
 var modal = false;
 
 $(document).ready(function() {
@@ -628,4 +577,55 @@ $(document).ready(function() {
     //    autoBank();
 });
 </script>
+<style type="text/css">
+
+
+div.ui-page.ui-page-theme-a.ui-page-active {
+    padding-left: 2vw;
+    background-color: black;
+}
+
+.no-close .ui-dialog-titlebar-close {
+    display: none;
+}
+
+.ui-dialog .ui-dialog-titlebar {
+    visibility: hidden;
+}
+
+.ui-pagecontainer {
+border: 0;
+padding: 0;
+}
+
+
+div.ui-dialog {
+    background-color: antiquewhite !important;
+}
+
+body {
+    overflow: hidden;
+    /* disable pull to refresh */
+    overflow-y: hidden;
+    overscroll-behavior-y: contain;
+}
+div#cards {
+    position: relative;
+}
+ui-draggable {
+    border-color: blue;
+    border-width: 1px;
+    border-style: solid;
+}
+ui-draggable-disabled {
+    border-color: red;
+    border-width: 1px;
+    border-style: solid;
+}
+ui-droppable {
+    border-color: blue;
+    border-width: 1px;
+    border-style: solid;
+}
+</style>
 </html>

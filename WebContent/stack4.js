@@ -60,6 +60,11 @@ class Stack {
         }
 
         function promptForCards(result) {
+            // this function is called:
+            //  a) for all up sequences
+            //  b) for down sequences when
+            //        1. moving to an empty stack
+            //        2. moving to a bank stack
             function getCSS() {
                 var css = {};
                 css["position"] = "absolute";
@@ -69,20 +74,29 @@ class Stack {
                 css["z-index"] = `${1000-k}`;
                 return css;
             }
+            // window width = N * 1.1
+            var cardWidth = $(window).width() * WIDTH / 100;
+            var spacingWidth = cardWidth * 0.1;
+            var numberOfCards = result.length;            
+            var dialogWidth = (cardWidth + spacingWidth) * numberOfCards + 4 * spacingWidth;
+
             
-            var dialogHeight = $(window).height() * 0.3; // + WIDTH * up.length * 1.5;
+            var aspectRatio = 1.5;
+            var cardHeight = cardWidth * aspectRatio;
+            var overlap = cardHeight * 0.2;
+            var dialogHeight = cardHeight + (overlap + 5) * numberOfCards;
             
-            $("<div id='modal'></div>").dialog(
+            var dialog = $("<div id='modal'></div>").dialog(
                     { 
                       modal: true,
                       dialogClass: "no-close",
-                      resizable: false,
-                      width: `${(WIDTH+1)*up.length}vw`,
+                      resizable: true,
+                      width: `${dialogWidth}`,
                       height: `${dialogHeight}`
                     }
             );
             for(var i = 0; i < result.length; i++) {
-                for(var k = i; k < result.length; k++) {
+                for(var k = 0; k <= i; k++) {
                     var div = getNewCard(result[k]);
                     $("#modal").append(div);
                     div.css(getCSS());
@@ -164,9 +178,13 @@ class Stack {
                 if(dropStack.isEmpty()) {
                     var maxCardsCanMove = Math.pow(2, emptyStacks-1);
                     result = down.slice(-maxCardsCanMove);
+                    if(result.length !== 0) {
+                        promptForCards(result);
+                        return;
+                    }
                 } else {
                     var maxCardsCanMove = Math.pow(2, emptyStacks);
-                    var reducedDown = down.slice(-maxCardsCanMove);
+                    var reducedDown = down.slice(0, maxCardsCanMove);
                     var downPips = pips(reducedDown);
                     var dragTopIndex = downPips.indexOf(pip(dropTop)-1);
                     if(pip(dropTop) - downPips[dragTopIndex] === 1) {
@@ -180,6 +198,10 @@ class Stack {
                     if(pip(cards[0]) === 1) result = cards;
                 } else {
                     if(dragTop%52 - dropTop%52 === 1) result = cards;
+                }
+                if(result.length !== 0) {
+                    promptForCards(result);
+                    return;
                 }
             }
             deferred.resolve(result);
@@ -261,24 +283,6 @@ class Stack {
         buildSequence(this.down, function(a,b){ return pip(a) - pip(b) === 1})
         buildSequence(this.inSequence, function(a,b){ return a%52 - b%52 === 1})
         var stack = this;
-        function logit() {
-            var x = [];
-            for(var i = 0; i < stack.down.length; i++) {
-                x.push(pip(stack.down[i]))
-            }
-            console.log("down", x);
-            var x = [];
-            for(var i = 0; i < stack.up.length; i++) {
-                x.push(pip(stack.up[i]))
-            }
-            console.log("up", x);
-            var x = [];
-            for(var i = 0; i < stack.inSequence.length; i++) {
-                x.push(stack.inSequence[i]%52)
-            }
-            console.log("inSequence", x);
-        }
-//        logit();
     }
     
     getTop() {
@@ -357,10 +361,4 @@ class Stack {
         var div = DOM[top];
         div.click(packStack, packClickHandler);
     }
-
-
 }
-
-// end of class
-// global functions follow
-
