@@ -74,7 +74,6 @@ class Stack {
                 css["z-index"] = `${1000-k}`;
                 return css;
             }
-            // window width = N * 1.1
             var cardWidth = $(window).width() * WIDTH / 100;
             var spacingWidth = cardWidth * 0.1;
             var numberOfCards = result.length;            
@@ -177,7 +176,7 @@ class Stack {
             if(dropStack.type === "table") {
                 if(dropStack.isEmpty()) {
                     var maxCardsCanMove = Math.pow(2, emptyStacks-1);
-                    result = down.slice(-maxCardsCanMove);
+                    result = down.slice(0, maxCardsCanMove);
                     if(result.length !== 0) {
                         promptForCards(result);
                         return;

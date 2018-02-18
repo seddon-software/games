@@ -13,7 +13,7 @@
 <script src="jquery.mobile.custom.js"></script>
 <script src="jquery_cookie.js"></script>
 <script src="jquery.ui.touch-punch.min.js"></script>
-<script src="stack4.js"></script>
+<script src="stack.js"></script>
 
 <script>
     function doDrop(div) {
@@ -22,6 +22,7 @@
         // dragStack is global
         function doTransferCards(cards) {
             transferCards(cards, dropStack, dragStack);
+            autoBank();
         }
         var stackIndex = $(div).data("card-info").stackIndex;
         dropStack = stacks[stackIndex];
@@ -94,6 +95,7 @@
         resetPack();
         setupDragAndDrop();
         enablePackClickHandlerOnTopCard();
+        autoBank();
     }
   
     function setupBank() {    
@@ -197,7 +199,7 @@
     }
     
     function redraw() {
-        // to be called initially and then after each transfer 
+        // to be called initially and then after drag 
         for(var i = 0; i < 2*52; i++) {
             var div = DOM[i];
             var css = getCSS(div, i);
@@ -431,7 +433,7 @@
             // pass a copy of cards to journal
             var undo = false;
             addToJournal("table", cards.slice(0), dragStack, dropStack, undo);
-            dropStack.transfer(dragStack, cards, undo); // calls redraw
+            dropStack.transfer(dragStack, cards, undo);
 
             // make sure top card is visible
             var top = dragStack.getTop();
@@ -443,41 +445,72 @@
     }
     
     function autoBank() {
+        var lowestPip = 14;
         for(var i = 0; i < BANK_STACKS; i++) {
-            var bankStack = Stack.find("bank", i);
-            for(var k = 0; k < TABLE_STACKS; k++) {
-                var tableStack = Stack.find("table", k);
-                bankStack.compute();
-                tableStack.compute();
-                var count = bankStack.bankStackWillAccept(tableStack);
-                if(count > 0) {
-                    bankStack.transfer(tableStack, count, undo);
-                    // ?? should I add something to the journal here??
+            var stack = Stack.find("bank", i);
+            if(!stack.isEmpty()) {
+                var topPip = pip(stack.getTop());
+                if(topPip < lowestPip) lowestPip = topPip;
+            } else {
+                lowestPip = 0;
+            }
+        }
+        
+        // determine possible drop stacks
+        var possibleDropStacks = [];
+        var dropStack;
+        for(var i = 0; i < BANK_STACKS; i++) {
+            var stack = Stack.find("bank", i);
+            if(stack.isEmpty()) {
+                possibleDropStacks.push(stack);
+            } else {
+                if(pip(stack.getTop()) === lowestPip) {
+                    possibleDropStacks.push(stack);
                 }
             }
-        }    
-    }
-
-    function debugIt() {
-        var html = "";
-        for(var i = 0; i < BANK_STACKS; i++) {
-            var bankStack = Stack.find("bank", i);
-            for(var k = 0; k < TABLE_STACKS; k++) {
-                var tableStack = Stack.find("table", k);
-                bankStack.compute();
-                tableStack.compute();
-                var count = bankStack.bankStackWillAccept(tableStack);
-                html += count;
-            }
-            html += "<br/>";
         }
-        $("#debug").html(html);
+        if(possibleDropStacks.length === 0) return;
+        
+        // determine drag stack
+        var dragStack;
+        var dragPip = lowestPip + 1;
+        for(var i = 0; i < TABLE_STACKS; i++) {
+            var stack = Stack.find("table", i);
+            for(var k = 0; k < possibleDropStacks.length; k++) {
+                dropStack = possibleDropStacks[k];
+                if(!stack.isEmpty()) {
+                    if(dropStack.isEmpty()) {
+                        if(pip(stack.getTop()) === 1) {
+                            dragStack = stack;
+                            break;
+                        }
+                    } else {
+                        if(stack.getTop()%52 - dropStack.getTop()%52 === 1) {
+                            dragStack = stack;
+                            break;
+                        }
+                    }
+                }
+            }
+            if(dragStack !== undefined) break;
+        }
+
+        if(dragStack === undefined) return; // break out of recursion
+        
+        // autobank a single card
+        var cards = [dragStack.getTop()];
+        var undo = false;
+        addToJournal("table", cards.slice(), dragStack, dropStack, undo);
+        dropStack.transfer(dragStack, cards, undo);
+        if(!dragStack.isEmpty()) {
+            var card = dragStack.getTop();
+            if(cardIsFaceDown(card)) flip(card);
+        }
+        
+        // recurse
+        autoBank();
     }
 
-    function j() {
-        console.log("journal", journal);
-    }
-    
     function dump(n) {
         var stack = stacks[n];
         var s = "";
@@ -536,7 +569,6 @@
     <div id='cards'></div>
     <button id='undo' type="button">Undo</button>
     <button id='undo10' type="button">Undo 10</button>
-    <div id='debug'></div>
     <div id="copyright">SPIDER © Chris Seddon, 25 January 2018</div>
 </body>
 <script>
@@ -544,22 +576,18 @@ var WIDTH = 7;
 var TOP_SEPARATION = 2;
 var LEFT_SEPARATION = 2;
 var TOP_OFFSET = 2;
-
 var d = dump;
 var debug = false;
 var TABLE_STACKS = 10;
 var BANK_STACKS = 8;
 var PACK_STACKS = 1;
-var android = navigator.appVersion.indexOf("Android") !== -1;
 var stacks = [];
 var journal = [];
 var DOM = [];
 var blanks = [];
 var cards = [];
-var packCounter;
 var dragStack;
 var dropped = false;
-var modal = false;
 
 $(document).ready(function() {
     setupDOM();
@@ -569,12 +597,17 @@ $(document).ready(function() {
     setupBlanks();
     positionFurniture();
     shuffleDoublePack();    
-    setupTable(44, 34);
-    setupPack(60);
+    if(debug) {
+        setupTable(4, 0);
+        setupPack(100);
+    } else {
+        setupTable(44, 34);
+        setupPack(60);
+    }
     redraw();
     setupDragAndDrop();
     setupUndo();
-    //    autoBank();
+    autoBank();
 });
 </script>
 <style type="text/css">
@@ -594,13 +627,13 @@ div.ui-page.ui-page-theme-a.ui-page-active {
 }
 
 .ui-pagecontainer {
-border: 0;
-padding: 0;
+    border: 0;
+    padding: 0;
 }
 
 
 div.ui-dialog {
-    background-color: antiquewhite !important;
+    background-color: #118844 !important;
 }
 
 body {
