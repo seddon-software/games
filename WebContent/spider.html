@@ -48,7 +48,7 @@
         div.draggable(
         { 
             start:  function() { doDrag(this); },
-            stop:   function() { redraw(); j(); }
+            stop:   function() { redraw(); }
         });
     }
 
@@ -549,8 +549,6 @@
         }
         function undo() {
             if(journal.length === 0) return false;  // journal empty
-
-            console.log(journal[journal.length-1]);
             var entry = journal.pop();
             if(entry.type === "flip") doFlip(entry);
             if(entry.type === "deal") doDeal(entry);
@@ -591,7 +589,7 @@ var LEFT_SEPARATION = 2;
 var TOP_OFFSET = 2;
 
 var d = dump;
-var debug = true;
+var debug = false;
 var TABLE_STACKS = 10;
 var BANK_STACKS = 8;
 var PACK_STACKS = 1;
