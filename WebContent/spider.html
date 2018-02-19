@@ -18,10 +18,10 @@
 <script>
     function doDrop(div) {
         if(dropped) return;  // prevent multiple drops
-        console.log("doDrop()");
+
         // dragStack is global
         function doTransferCards(cards) {
-            transferCards(cards, dropStack, dragStack);
+            transferCards(cards, dropStack, dragStack, "table");
             autoBank();
         }
         var stackIndex = $(div).data("card-info").stackIndex;
@@ -48,7 +48,7 @@
         div.draggable(
         { 
             start:  function() { doDrag(this); },
-            stop:   function() { redraw(); }
+            stop:   function() { redraw(); j(); }
         });
     }
 
@@ -85,12 +85,9 @@
         // deal one card to each table stack
         for(var i = 0; i < TABLE_STACKS; i++) {
             var tableStack = Stack.find("table", i);
-            var card = packStack.getTop();
-            flip(card);
-            var cards = [card];
-            addToJournal("deal", cards.slice(), packStack, tableStack);
+            var cards = [packStack.getTop()];
             var undo = false;
-            tableStack.transfer(packStack, cards, undo);
+            tableStack.transfer(packStack, cards, undo, "deal");
         }
         resetPack();
         setupDragAndDrop();
@@ -155,8 +152,10 @@
                 var stack = Stack.find("table", tableId);
                 var size = stack.length();
                 var factor = 1.0;
-                if(size > 13) factor = 0.5;
-                if(size > 26) factor = 0.3;
+                if(size > 13) factor = 0.8;
+                if(size > 18) factor = 0.6;
+                if(size > 23) factor = 0.4;
+                if(size > 28) factor = 0.3;
                 return factor;
             }
             // cardPosition = -1 for blank card
@@ -254,17 +253,27 @@
                   .css("position", "fixed")
                   .css("width", "10vw")
                   .css("border-radius", "1vw");
-        $("#undo10").css("color", "black")
+        $("#undo-10-moves")
+                  .css("color", "black")
                   .css("left", "15vw")
                   .css("bottom", "5vh")
                   .css("position", "fixed")
                   .css("width", "10vw")
                   .css("border-radius", "1vw");
-        $("#debug").css("color", "black")
-                  .css("left", "45vw")
-                  .css("bottom", "30vh")
+        $("#undo-1-empty-stack")
+                   .css("color", "black")
+                  .css("left", "30vw")
+                  .css("bottom", "5vh")
                   .css("position", "fixed")
-                  .css("width", "35vw");
+                  .css("width", "10vw")
+                  .css("border-radius", "1vw");
+        $("#undo-2-empty-stacks")
+                  .css("color", "black")
+                  .css("left", "45vw")
+                  .css("bottom", "5vh")
+                  .css("position", "fixed")
+                  .css("width", "10vw")
+                  .css("border-radius", "1vw");
         $("#copyright").css("color", "white")
                   .css("bottom", "0px")
                   .css("position", "fixed")
@@ -356,14 +365,14 @@
         }
     }
         
-    function addToJournal(type, cards, fromStack, toStack, undo) {
+    function addToJournal(type, cards, fromStack, toStack) {
         var entry = { 
                       type:  type, 
                       cards: cards,
                       from:  fromStack.index,
                       to:    toStack.index
                     };
-        if(!undo) journal.push(entry);
+        journal.push(entry);
 
     }
 
@@ -430,17 +439,8 @@
     
     function transferCards(cards, dropStack, dragStack) {
         if(cards.length !== 0) {
-            // pass a copy of cards to journal
             var undo = false;
-            addToJournal("table", cards.slice(0), dragStack, dropStack, undo);
-            dropStack.transfer(dragStack, cards, undo);
-
-            // make sure top card is visible
-            var top = dragStack.getTop();
-            if(cardIsFaceDown(top)) {
-                addToJournal("flip", [top], dragStack, dropStack, undo);           
-                flip(top);
-            }
+            dropStack.transfer(dragStack, cards, undo, "table");
         }        
     }
     
@@ -500,17 +500,16 @@
         // autobank a single card
         var cards = [dragStack.getTop()];
         var undo = false;
-        addToJournal("table", cards.slice(), dragStack, dropStack, undo);
-        dropStack.transfer(dragStack, cards, undo);
-        if(!dragStack.isEmpty()) {
-            var card = dragStack.getTop();
-            if(cardIsFaceDown(card)) flip(card);
-        }
+        dropStack.transfer(dragStack, cards, undo, "table");
         
         // recurse
         autoBank();
     }
 
+    function j() {
+        console.log(journal);    
+    }
+    
     function dump(n) {
         var stack = stacks[n];
         var s = "";
@@ -549,17 +548,29 @@
             undo();            
         }
         function undo() {
-            if(journal.length === 0) return;  // journal empty
+            if(journal.length === 0) return false;  // journal empty
 
+            console.log(journal[journal.length-1]);
             var entry = journal.pop();
             if(entry.type === "flip") doFlip(entry);
             if(entry.type === "deal") doDeal(entry);
             if(entry.type === "table") doTable(entry);
+            return true;
         }
 
         $("#undo").click(undo);
-        $("#undo10").click(function() {
-            for(var i = 0; i < 10; i++) undo(); 
+        $("#undo-10-moves").click(function() {
+            for(var i = 0; i < 10; i++) undo();
+        });
+        $("#undo-1-empty-stack").click(function() {
+            while(undo()) {
+                if(Stack.howManyEmptyStacks() === 1) break;
+            }
+        });
+        $("#undo-2-empty-stacks").click(function() {
+            while(undo()) {
+                if(Stack.howManyEmptyStacks() === 2) break;
+            }
         });
     }
 
@@ -568,7 +579,9 @@
 <body>
     <div id='cards'></div>
     <button id='undo' type="button">Undo</button>
-    <button id='undo10' type="button">Undo 10</button>
+    <button id='undo-10-moves' type="button">Undo 10</button>
+    <button id='undo-1-empty-stack' type="button">Undo to 1 empty stack</button>
+    <button id='undo-2-empty-stacks' type="button">Undo to 2 empty stacks</button>
     <div id="copyright">SPIDER © Chris Seddon, 25 January 2018</div>
 </body>
 <script>
@@ -576,8 +589,9 @@ var WIDTH = 7;
 var TOP_SEPARATION = 2;
 var LEFT_SEPARATION = 2;
 var TOP_OFFSET = 2;
+
 var d = dump;
-var debug = false;
+var debug = true;
 var TABLE_STACKS = 10;
 var BANK_STACKS = 8;
 var PACK_STACKS = 1;

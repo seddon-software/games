@@ -1,11 +1,15 @@
 class Stack {
 
-    transfer(fromStack, cards, undo) {
+    transfer(fromStack, cards, undo, type) {
         function isUp() {  // array is stored backwards, e.g. [31 56 3] -> [5 4 3] after extracting pips
             return pip(cards[0]) - pip(cards[cards.length-1]) > 0;
         }
         
         var toStack = this;
+
+        // journal transfer
+        if(!undo) addToJournal(type, cards.slice(), fromStack, toStack);
+
         var count = cards.length;
         for(var i = 0; i < count; i++) {
             fromStack.cards.pop();
@@ -25,7 +29,26 @@ class Stack {
       
         fromStack.resetDragAndDrop();
         toStack.resetDragAndDrop();
+
+        // make sure top card is visible
+        var top;
+        if(type === "table") top = fromStack.getTop();
+        if(type === "deal") top = toStack.getTop();
+        if(cardIsFaceDown(top)) {
+            addToJournal("flip", [top], fromStack, toStack, undo);           
+            flip(top);
+        }
+
         redraw();
+    }
+    
+    static howManyEmptyStacks() {
+        var count = 0;
+        for(var i = 0; i < stacks.length; i++) {
+            var stack = stacks[i];
+            if(stack.type === "table" && stack.length() === 0) count++;
+        }
+        return count;            
     }
     
     stackWillAccept(dragStack) {
@@ -51,12 +74,13 @@ class Stack {
         }
 
         function howManyEmptyStacks() {
-            var count = 0;
-            for(var i = 0; i < stacks.length; i++) {
-                var stack = stacks[i];
-                if(stack.type === "table" && stack.length() === 0) count++;
-            }
-            return count;
+//            var count = 0;
+//            for(var i = 0; i < stacks.length; i++) {
+//                var stack = stacks[i];
+//                if(stack.type === "table" && stack.length() === 0) count++;
+//            }
+//            return count;
+            return Stack.howManyEmptyStacks();
         }
 
         function promptForCards(result) {
@@ -83,7 +107,7 @@ class Stack {
             var aspectRatio = 1.5;
             var cardHeight = cardWidth * aspectRatio;
             var overlap = cardHeight * 0.2;
-            var dialogHeight = cardHeight + (overlap + 5) * numberOfCards;
+            var dialogHeight = cardHeight + (overlap + 15) * numberOfCards;
             
             var dialog = $("<div id='modal'></div>").dialog(
                     { 
@@ -150,12 +174,16 @@ class Stack {
                 if(dropStack.isEmpty()) {
                     if(pip(dropTop) === 1) result = up;
                 } else {
-                    if(dropTop%52 - dragTop%52 === 1) {
+                    if(dragTop%52 - dropTop%52 === 1) {
                         result = up;
                     }
                 }
             }
-            promptForCards(result);
+            if(result.length > 1) {
+                promptForCards(result);
+            } else {
+                deferred.resolve(result);                
+            }
         }
 
         function doDownSequence() {
@@ -177,7 +205,7 @@ class Stack {
                 if(dropStack.isEmpty()) {
                     var maxCardsCanMove = Math.pow(2, emptyStacks-1);
                     result = down.slice(0, maxCardsCanMove);
-                    if(result.length !== 0) {
+                    if(result.length > 1) {
                         promptForCards(result);
                         return;
                     }
@@ -198,7 +226,7 @@ class Stack {
                 } else {
                     if(dragTop%52 - dropTop%52 === 1) result = cards;
                 }
-                if(result.length !== 0) {
+                if(result.length > 1) {
                     promptForCards(result);
                     return;
                 }
