@@ -73,16 +73,6 @@ class Stack {
                 return pip(down[0]) - pip(down[down.length-1]); // down returns <= 0 
         }
 
-        function howManyEmptyStacks() {
-//            var count = 0;
-//            for(var i = 0; i < stacks.length; i++) {
-//                var stack = stacks[i];
-//                if(stack.type === "table" && stack.length() === 0) count++;
-//            }
-//            return count;
-            return Stack.howManyEmptyStacks();
-        }
-
         function promptForCards(result) {
             // this function is called:
             //  a) for all up sequences
@@ -137,10 +127,11 @@ class Stack {
         // if stacks are not empty dragTop and dropTop must differ by one
         // bank stacks check suit as well as pip value
             if(dropStack.type === "bank") {
+                var inSequence = dragStack.getInSequence()
                 if(dropStack.isEmpty()) {
-                    if(pip(dragTop) === 1) result = up;
+                    if(pip(dragTop) === 1) result = inSequence;
                 } else {
-                    if(dragTop%52 - dropTop%52 === 1) result = up;
+                    if(dragTop%52 - dropTop%52 === 1) result = inSequence;
                 }
             }
             if(dropStack.type === "table") {
@@ -160,7 +151,7 @@ class Stack {
             //     b) transfer between populated stacks
             //          all cards can be transferred
             //     c) transfer to bank
-            //          all cards can be transferred
+            //          only 1 card can be transferred
             if(dropStack.type === "table") {
                 if(dropStack.isEmpty()) {
                     result = up;
@@ -172,10 +163,10 @@ class Stack {
             }
             if(dropStack.type === "bank") {
                 if(dropStack.isEmpty()) {
-                    if(pip(dropTop) === 1) result = up;
+                    if(pip(dropTop) === 1) result = [dragTop];
                 } else {
                     if(dragTop%52 - dropTop%52 === 1) {
-                        result = up;
+                        result = [dragTop];
                     }
                 }
             }
@@ -238,7 +229,7 @@ class Stack {
         var dropStack = this;
         var dropTop = dropStack.getTop();
         var dragTop = dragStack.getTop();
-        var emptyStacks = howManyEmptyStacks();
+        var emptyStacks = Stack.howManyEmptyStacks();
         
         dragStack.compute();
         

@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <!-- © Chris Seddon, 25 January 2018 -->
 <html>
+<!-- 
+Bugs:
+ -->
 <head>
   <meta charset="utf-8" />
   <meta name='viewport' 
@@ -40,7 +43,8 @@
     function makeDroppable(div) {
         div.droppable(
         { 
-            drop:   function() { doDrop(this); }
+            drop:   function() { doDrop(this); },
+            tolerance: "touch"
         });
     }
 
@@ -48,10 +52,19 @@
         div.draggable(
         { 
             start:  function() { doDrag(this); },
-            stop:   function() { redraw(); }
+            stop:   function() { redraw(); check(); }
         });
     }
 
+    function check() {
+        for(var i = 0; i < BANK_STACKS; i++) {
+            var stack = Stack.find("bank", i);
+            for(var k = 1; k < stack.length(); k++) {
+                if(stack[k] <= stack[k-1]) throw("Bank stack out of order");
+            }
+        }    
+    }
+    
     function enablePackClickHandlerOnTopCard() {
         var packStack = Stack.find("pack", 0);
         if(packStack.isEmpty()) return;
@@ -73,6 +86,7 @@
     }
 
     function packClickHandler() {
+        console.log("packClickHandler called ...")
         var packStack = Stack.find("pack", 0);
         // don't deal if pack empty
         if(packStack.length() === 0) return;
@@ -248,32 +262,22 @@
     }
     
     function positionFurniture() {
-        $("#undo").css("color", "black")
-                  .css("bottom", "5vh")
-                  .css("position", "fixed")
-                  .css("width", "10vw")
-                  .css("border-radius", "1vw");
-        $("#undo-10-moves")
-                  .css("color", "black")
-                  .css("left", "15vw")
-                  .css("bottom", "5vh")
-                  .css("position", "fixed")
-                  .css("width", "10vw")
-                  .css("border-radius", "1vw");
-        $("#undo-1-empty-stack")
-                   .css("color", "black")
-                  .css("left", "30vw")
-                  .css("bottom", "5vh")
-                  .css("position", "fixed")
-                  .css("width", "10vw")
-                  .css("border-radius", "1vw");
-        $("#undo-2-empty-stacks")
-                  .css("color", "black")
-                  .css("left", "45vw")
-                  .css("bottom", "5vh")
-                  .css("position", "fixed")
-                  .css("width", "10vw")
-                  .css("border-radius", "1vw");
+        function getCSS(color, left) {
+            var css = {};
+            css["color"] = color;
+            css["left"] = `${left}vw`;
+            css["bottom"] = "5vh";
+            css["position"] = "fixed";
+            css["width"] = "10vw";
+            css["border-radius"] = "1vw";
+            return css;
+        }
+        $("#undo").css(getCSS("black", 0));
+        $("#undo-10-moves").css(getCSS("black", 15));
+        $("#undo-1-empty-stack").css(getCSS("black", 30));
+        $("#undo-2-empty-stacks").css(getCSS("black", 45));
+        $("#restart").css(getCSS("black", 60));
+        $("#clock").css(getCSS("red", 75));
         $("#copyright").css("color", "white")
                   .css("bottom", "0px")
                   .css("position", "fixed")
@@ -281,9 +285,9 @@
     }
 
 
-    function startClock(offset) {
-        var start = new Date().valueOf() - 1000 * offset;
-        clock = setInterval(function() {        
+    function startClock() {
+        var start = new Date().valueOf();
+        timer = setInterval(function() {        
             var now = new Date().valueOf();
             duration = Math.round((now - start)/1000);
             var minutes = Math.floor(duration/60)
@@ -291,6 +295,8 @@
             seconds = seconds < 10 ? "0" + seconds : seconds
             message = minutes + ":" + seconds;
             $("#clock").text(message);
+            if(Stack.howManyEmptyStacks() === TABLE_STACKS)
+                clearInterval(timer);
         }, 1000);
         return clock;
     }
@@ -304,10 +310,16 @@
 
     function shuffleDoublePack() {
         function debugShuffle() {
-            cards[103] = 94;
-            cards[93] = 95;
-            cards[94] = 93;
-            cards[95] = 103;            
+            // 103, 102, 101, 100 are on table to begin width
+            // 0, 1, 2, ... from pack
+            cards[28] = 5;
+            cards[27] = 15;
+            cards[26] = 12;
+            cards[5] = 28;
+            cards[15] = 27;
+            cards[12] = 26;
+//            cards[1] = 93;
+//            cards[2] = 94;
         }
         function shuffle(array) {
             var counter = array.length;
@@ -570,6 +582,9 @@
                 if(Stack.howManyEmptyStacks() === 2) break;
             }
         });
+        $("#restart").click(function() {
+            while(undo()) {}
+        });
     }
 
 </script>
@@ -580,6 +595,8 @@
     <button id='undo-10-moves' type="button">Undo 10</button>
     <button id='undo-1-empty-stack' type="button">Undo to 1 empty stack</button>
     <button id='undo-2-empty-stacks' type="button">Undo to 2 empty stacks</button>
+    <button id='restart' type="button">restart</button>
+    <div id='clock'></div>
     <div id="copyright">SPIDER © Chris Seddon, 25 January 2018</div>
 </body>
 <script>
@@ -620,6 +637,7 @@ $(document).ready(function() {
     setupDragAndDrop();
     setupUndo();
     autoBank();
+    startClock();
 });
 </script>
 <style type="text/css">

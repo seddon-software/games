@@ -47,8 +47,8 @@ public class MemoryServer extends HttpServlet {
         		PrintWriter out = response.getWriter();
         		setInputVariables(request);
             ConnectToDatabase();
-            updateDatabaseWithLatestResult();
-        		ArrayList<String> results = getTopFiveResultsFromDatabase();
+            if(Integer.parseInt(time) > 0) updateDatabaseWithLatestResult();
+        		ArrayList<String> results = getTopTenResultsFromDatabase();
         		returnTopFiveResultsToClient(out, results);
         } catch (Exception e) {
             System.out.println(e);
@@ -87,11 +87,11 @@ public class MemoryServer extends HttpServlet {
         connection = DriverManager.getConnection(url, user, password);
     }
 
-    private ArrayList<String> getTopFiveResultsFromDatabase() throws SQLException {
+    private ArrayList<String> getTopTenResultsFromDatabase() throws SQLException {
         Statement statement = connection.createStatement();
         String sql = String.format("SELECT time, date, latest FROM results WHERE name = '%s' ORDER BY time ASC, date DESC LIMIT 10", name);
         ResultSet resultSet = statement.executeQuery(sql);
-        ArrayList<String> topFive = new ArrayList<String>();
+        ArrayList<String> tops = new ArrayList<String>();
         
         while (resultSet.next()) {
             time = resultSet.getString("time");
@@ -101,10 +101,10 @@ public class MemoryServer extends HttpServlet {
             
             String latest = resultSet.getString("latest");
             if(latest.equals("*")) date = date + "*" ;
-            topFive.add(String.format("%s %s", time, date));            
+            tops.add(String.format("%s %s", time, date));            
         }
         statement.close();
-        return topFive;
+        return tops;
     }
 
     private void returnTopFiveResultsToClient(PrintWriter out, ArrayList<String> results) {
