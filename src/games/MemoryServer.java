@@ -50,6 +50,7 @@ public class MemoryServer extends HttpServlet {
             if(Integer.parseInt(time) > 0) updateDatabaseWithLatestResult();
         		ArrayList<String> results = getTopTenResultsFromDatabase();
         		returnTopFiveResultsToClient(out, results);
+        		connection.close();
         } catch (Exception e) {
             System.out.println(e);
         }

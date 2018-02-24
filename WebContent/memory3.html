@@ -94,6 +94,7 @@ var secondCard = undefined;
 var oldFirstCard = undefined;
 var matches = 0;
 var android = navigator.appVersion.indexOf("Android") !== -1;
+var resultsVisible = true;
 
 var cards = [
     [2, "2_of_clubs.svg"],
@@ -228,8 +229,8 @@ function getCSS(row, col, visible, zIndex) {
     }
     var css = {};
     css["visibility"] = `${visible}`; 
-    css["left"] = `${2+col*WIDTH}${UNITS}`;
-    css["top"] = `${(row+0.2)*HEIGHT}${UNITS}`;
+    css["left"] = `${1+col*WIDTH}${UNITS}`;
+    css["top"] = `${(row+0.3)*HEIGHT}${UNITS}`;
     css["position"] = "absolute";
     css["width"] = `${WIDTH}${UNITS}`;
     css["height"] = `${HEIGHT}${UNITS}`;
@@ -400,11 +401,13 @@ function showResults() {
 }
 
 function toggleResults() {
+    var name = useCookiesToSetNameField();
+    getResults(name, 0);
     var visibility = $("#results").css("visibility");
     if(visibility === "visible")
-        hideResults();
+        resultsVisible = false;
     else
-        showResults();  
+        resultsVisible = true;
 }
 
 function addClickHandlers() {
@@ -419,8 +422,8 @@ function addTapHandlers() {
     $("#getResults").touchstart(toggleResults);
 }
     
-function updateResults(data) {
-    var message = "<b>Top 10 results:</b><br>";
+function updateResults(name, data) {
+    var message = `<b>Top 10 results for<br><span style='color:red;'>${name}</b></span><br>`;
     for(i = 0; i < data.length; i++) {
         // results come back in 2 fields: duration, date
         // field 2 has a '*' if its the latest result
@@ -441,7 +444,6 @@ function updateResults(data) {
         }
     }
     $("#results").html(message);
-    showResults();
 }
 
 function getResults(name, duration) {
@@ -456,8 +458,12 @@ function getResults(name, duration) {
             data: {time:duration, name:name},
             dataType:'json',
             success: function(data) {
-                updateResults(data);
-                if(duration > 0) showResults();
+                resultsFromServer = data;
+                updateResults(name, data);
+                if(resultsVisible) 
+                    showResults();
+                else
+                    hideResults();
             }
         });        
 }
@@ -469,6 +475,7 @@ function getName() {
 }
 
 function endGame() {
+    resultsVisible = true;
     getResults(getName(), duration);
     stopClock();
     restart();
@@ -492,7 +499,8 @@ function useCookiesToSetNameField() {
         $.cookie("name", $(this).val());
     });
     var cookieValue = $.cookie("name");
-    $("#name").val(cookieValue);        
+    $("#name").val(cookieValue);
+    return cookieValue;
 }
 
 function addCopyright() {
@@ -513,7 +521,7 @@ $(document).ready(function() {
     <div id='cards'></div>
     <div id='results'></div>
     <button id="pause" type="button">Pause</button>
-    <button id="getResults" type="button">Show Results</button>
+    <button id="getResults" type="button">Toggle Results</button>
     <div id='clock'>0:00</div>
     <div id='hide'></div>    
     <input id="name" type="text" name="name" value="">
