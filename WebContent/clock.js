@@ -3,7 +3,7 @@ var duration = undefined;
 var pausedTime = 0;
 
 function startClock(pausedTime) {
-    $("#clock").text("0:00");
+    //$("#clock").text("0:00");
     var start = new Date().valueOf() - 1000 * pausedTime;
     var clock = setInterval(function() {        
         var now = new Date().valueOf();
