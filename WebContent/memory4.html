@@ -162,6 +162,7 @@ var cards = [
 var card1 = undefined;
 var card2 = undefined;
 var matches = 0;
+var misses = 0;
 
 $(document).ready(function() {
     $("body").css('cursor', 'pointer');        
@@ -207,6 +208,7 @@ function clearPage() {
 
 function clickHandler() {
     $("#cards").click(function(e) {
+        e.stopPropagation();
         if(timer === undefined) {
             hideResults();
             timer = startClock(pausedTime);
@@ -242,6 +244,7 @@ function endGame() {
     shuffle(cards);
     setupDOM();
     card1 = undefined;
+    misses = 0;
 }
 
 function getAspectRatio() {
@@ -348,6 +351,7 @@ function match(card1, card2) {
 
 function noMatch(card1, card2) {
     setTimeout(function() {
+        recordMisses();
         var split1 = splitId(card1.id);
         var split2 = splitId(card2.id);
         var faceUp1 = `#${split1[0]}-faceUp`;
@@ -381,12 +385,18 @@ function positionFurniture() {
     $("#name").css("font-size", "16pt");
     $("#name").css("width", "15vw");
     $("#name").css("height", "3vw");
+    $("#misses").css(getCSS("yellow", 48));
     $("#clock").css(getCSS("red", 75));
     $("#clock").css('font-size', "18pt");
     $("#copyright").css("color", "white")
                    .css("bottom", "0px")
                    .css("position", "fixed")
                    .css("width", "50vw");
+}
+
+function recordMisses() {
+    misses++;
+    $("#misses").text(misses);
 }
 
 function setupDOM() {
@@ -503,6 +513,7 @@ function useCookiesToSetNameField() {
     <div id='clock'>0:00</div>
     <div id='hide'></div>    
     <input id="name" type="text" name="name" value="">
+    <div id='misses'>0</div>
     <div id="copyright">© Chris Seddon, 17 January 2018</div>
 </body>
 </html>
